@@ -4,6 +4,7 @@ This cheatsheet describes 0.3 syntax.
 
 ## Variables And Basic Types
 
+
 ```ftd
 -- boolean foo: true
 
