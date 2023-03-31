@@ -52,6 +52,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
+      - name: Debug
+        id: debug
+        continue-on-error: true
+        run: which fastn
       - name: Run cargo fmt
         id: fmt
         continue-on-error: true
