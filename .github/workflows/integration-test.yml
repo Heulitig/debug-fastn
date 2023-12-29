@@ -23,7 +23,22 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          override: true
+          components: rustfmt, clippy
+
+      - name: Fastn install
+        id: fastn-install
+        continue-on-error: true
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path fastn --profile dev
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -57,8 +72,18 @@ jobs:
         run: |
           python scripts/hello-world-test.py
 
-#      - name: Test server (port 5000)
-#        run: |
-#          python scripts/test-server.py
+      - name: Test server (port 5000)
+        run: |
+          python scripts/test-server.py
 
+      - name: Current Directory (before testing)
+        run: |
+          echo "Current Working Directory"
+          pwd 
+          echo "Current Directory files"
+          ls -al 
 
+      - name: Run integration tests
+        run: |
+          cd integration-tests/01-hello-world
+          fastn test --headless

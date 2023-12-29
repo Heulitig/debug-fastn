@@ -23,17 +23,21 @@ def fetch_data():
             # Execute a query to fetch data from the 'test' table
             cursor.execute("SELECT * FROM test;")
 
-            # Fetch all rows from the result set
-            rows = cursor.fetchall()
+            # Fetch first row from the result set
+            row = cursor.fetchone()
 
-            # Convert the results to a list of dictionaries
-            data_list = [{"id": row[0], "data": row[1]} for row in rows]
+            data = dict()
+            if row is not None:
+                data = {
+                    "id": row[0],
+                    "data": row[1],
+                }
 
     finally:
         # Close the database connection
         connection.close()
 
-    return data_list
+    return data
 
 
 @app.route('/get_data', methods=['GET'])
@@ -42,7 +46,9 @@ def get_data():
     data = fetch_data()
 
     # Return the data as JSON
-    return jsonify(data)
+    json_result = jsonify(data)
+    print(json_result)
+    return json_result
 
 
 if __name__ == '__main__':
