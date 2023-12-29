@@ -1,7 +1,7 @@
 name: PostgreSQL Integration Test
 
 on:
-  workflow-dispatch:
+  workflow_dispatch:
   push:
     branches:
       - main
