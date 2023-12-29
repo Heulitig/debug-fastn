@@ -78,7 +78,7 @@ jobs:
 
       - name: Test python server (port 5000)
         run: |
-          nohup flask --app scripts.test-server run
+          nohup python scripts/test-server.py
 
       - name: Current Directory (before testing)
         run: |
