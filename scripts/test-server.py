@@ -53,4 +53,5 @@ def get_data():
 
 if __name__ == '__main__':
     # Run the Flask application on port 5000
+    print("Starting python server")
     app.run(port=5000)
