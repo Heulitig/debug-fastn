@@ -1,14 +1,14 @@
-pub async fn process<'a>(
+pub async fn process(
     value: ftd::ast::VariableValue,
-    kind: ftd::interpreter2::Kind,
-    doc: &ftd::interpreter2::TDoc<'a>,
+    kind: ftd::interpreter::Kind,
+    doc: &ftd::interpreter::TDoc<'_>,
     config: &fastn_core::Config,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Value> {
+) -> ftd::interpreter::Result<ftd::interpreter::Value> {
     use itertools::Itertools;
     let root = config.get_root_for_package(&config.package);
     let snapshots = fastn_core::snapshot::get_latest_snapshots(&config.root)
         .await
-        .map_err(|_e| ftd::interpreter2::Error::ParseError {
+        .map_err(|_e| ftd::interpreter::Error::ParseError {
             message: "fastn-error: error in package-tree processor `get_latest_snapshots`"
                 .to_string(),
             doc_id: doc.name.to_string(),
@@ -16,7 +16,7 @@ pub async fn process<'a>(
         })?;
     let workspaces = fastn_core::snapshot::get_workspace(config)
         .await
-        .map_err(|_e| ftd::interpreter2::Error::ParseError {
+        .map_err(|_e| ftd::interpreter::Error::ParseError {
             message: "fastn-error: error in package-tree processor `get_workspace`".to_string(),
             doc_id: doc.name.to_string(),
             line_number: value.line_number(),
@@ -24,13 +24,13 @@ pub async fn process<'a>(
     let all_files = config
         .get_files(&config.package)
         .await
-        .map_err(|_e| ftd::interpreter2::Error::ParseError {
+        .map_err(|_e| ftd::interpreter::Error::ParseError {
             message: "fastn-error: error in package-tree processor `get_files`".to_string(),
             doc_id: doc.name.to_string(),
             line_number: value.line_number(),
         })?
         .into_iter()
-        .map(|v| v.get_id())
+        .map(|v| v.get_id().to_string())
         .collect_vec();
     let deleted_files = snapshots
         .keys()
@@ -38,8 +38,8 @@ pub async fn process<'a>(
         .map(|v| v.to_string());
 
     let mut files = config
-        .get_all_file_paths1(&config.package, true)
-        .map_err(|_e| ftd::interpreter2::Error::ParseError {
+        .get_all_file_paths(&config.package)
+        .map_err(|_e| ftd::interpreter::Error::ParseError {
             message: "fastn-error: error in package-tree processor `get_all_file_paths1`"
                 .to_string(),
             doc_id: doc.name.to_string(),
@@ -64,5 +64,5 @@ pub async fn process<'a>(
     )
     .await
     .unwrap();
-    doc.from_json(&tree, &kind, value.line_number())
+    doc.from_json(&tree, &kind, &value)
 }

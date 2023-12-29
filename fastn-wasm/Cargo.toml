@@ -1,0 +1,14 @@
+[package]
+name = "fastn-wasm"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+indoc.workspace = true
+itertools.workspace = true
+pretty.workspace = true
+wasmtime.workspace = true

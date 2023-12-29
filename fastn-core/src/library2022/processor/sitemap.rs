@@ -1,59 +1,59 @@
 pub fn process(
     value: ftd::ast::VariableValue,
-    kind: ftd::interpreter2::Kind,
-    doc: &ftd::interpreter2::TDoc,
-    config: &fastn_core::Config,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Value> {
-    if let Some(ref sitemap) = config.package.sitemap {
-        let doc_id = config
+    kind: ftd::interpreter::Kind,
+    doc: &ftd::interpreter::TDoc,
+    req_config: &fastn_core::RequestConfig,
+) -> ftd::interpreter::Result<ftd::interpreter::Value> {
+    if let Some(ref sitemap) = req_config.config.package.sitemap {
+        let doc_id = req_config
             .current_document
             .clone()
             .map(|v| fastn_core::utils::id_to_path(v.as_str()))
             .unwrap_or_else(|| {
                 doc.name
                     .to_string()
-                    .replace(config.package.name.as_str(), "")
+                    .replace(req_config.config.package.name.as_str(), "")
             })
             .trim()
             .replace(std::path::MAIN_SEPARATOR, "/");
 
         if let Some(sitemap) = sitemap.get_sitemap_by_id(doc_id.as_str()) {
-            return doc.from_json(&sitemap, &kind, value.line_number());
+            return doc.from_json(&sitemap, &kind, &value);
         }
     }
     doc.from_json(
-        &fastn_core::sitemap::SiteMapCompat::default(),
+        &fastn_core::sitemap::SitemapCompat::default(),
         &kind,
-        value.line_number(),
+        &value,
     )
 }
 
 pub fn full_sitemap_process(
     value: ftd::ast::VariableValue,
-    kind: ftd::interpreter2::Kind,
-    doc: &ftd::interpreter2::TDoc,
-    config: &fastn_core::Config,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Value> {
-    if let Some(ref sitemap) = config.package.sitemap {
-        let doc_id = config
+    kind: ftd::interpreter::Kind,
+    doc: &ftd::interpreter::TDoc,
+    req_config: &fastn_core::RequestConfig,
+) -> ftd::interpreter::Result<ftd::interpreter::Value> {
+    if let Some(ref sitemap) = req_config.config.package.sitemap {
+        let doc_id = req_config
             .current_document
             .clone()
             .map(|v| fastn_core::utils::id_to_path(v.as_str()))
             .unwrap_or_else(|| {
                 doc.name
                     .to_string()
-                    .replace(config.package.name.as_str(), "")
+                    .replace(req_config.config.package.name.as_str(), "")
             })
             .trim()
             .replace(std::path::MAIN_SEPARATOR, "/");
 
         let sitemap_compat = to_sitemap_compat(sitemap, doc_id.as_str());
-        return doc.from_json(&sitemap_compat, &kind, value.line_number());
+        return doc.from_json(&sitemap_compat, &kind, &value);
     }
     doc.from_json(
-        &fastn_core::sitemap::SiteMapCompat::default(),
+        &fastn_core::sitemap::SitemapCompat::default(),
         &kind,
-        value.line_number(),
+        &value,
     )
 }
 
@@ -118,7 +118,7 @@ pub struct SiteMapCompat {
 pub fn to_sitemap_compat(
     sitemap: &fastn_core::sitemap::Sitemap,
     current_document: &str,
-) -> fastn_core::sitemap::SiteMapCompat {
+) -> fastn_core::sitemap::SitemapCompat {
     use itertools::Itertools;
     fn to_toc_compat(
         toc_item: &fastn_core::sitemap::toc::TocItem,
@@ -138,7 +138,7 @@ pub fn to_sitemap_compat(
             url: Some(toc_item.id.clone()),
             number: None,
             title: toc_item.title.clone(),
-            description: None,
+            description: toc_item.extra_data.get("description").cloned(),
             path: None,
             is_heading: false,
             font_icon: toc_item.icon.clone().map(|v| v.into()),
@@ -152,7 +152,11 @@ pub fn to_sitemap_compat(
             readers: toc_item.readers.clone(),
             writers: toc_item.writers.clone(),
             is_disabled: false,
-            image_src: None,
+            image_src: toc_item
+                .extra_data
+                .get("img-src")
+                .cloned()
+                .map(|v| v.into()),
             document: None,
         };
         toc_compat
@@ -164,7 +168,7 @@ pub fn to_sitemap_compat(
     ) -> fastn_core::sitemap::toc::TocItemCompat {
         let mut is_child_active: bool = false;
         let mut children: Vec<fastn_core::sitemap::toc::TocItemCompat> = vec![];
-        for child in subsection.toc.iter() {
+        for child in subsection.toc.iter().filter(|t| !t.skip) {
             let child_to_toc_compat = to_toc_compat(child, current_document);
             if child_to_toc_compat.is_active {
                 is_child_active = true;
@@ -175,7 +179,7 @@ pub fn to_sitemap_compat(
         fastn_core::sitemap::toc::TocItemCompat {
             url: subsection.id.clone(),
             title: subsection.title.clone(),
-            description: None,
+            description: subsection.extra_data.get("description").cloned(),
             path: None,
             is_heading: false,
             font_icon: subsection.icon.clone().map(|v| v.into()),
@@ -188,7 +192,11 @@ pub fn to_sitemap_compat(
                 is_child_active
             },
             is_open: false,
-            image_src: None,
+            image_src: subsection
+                .extra_data
+                .get("img-src")
+                .cloned()
+                .map(|v| v.into()),
             nav_title: subsection.nav_title.clone(),
             children,
             readers: subsection.readers.clone(),
@@ -205,7 +213,7 @@ pub fn to_sitemap_compat(
     ) -> fastn_core::sitemap::toc::TocItemCompat {
         let mut is_child_active: bool = false;
         let mut children: Vec<fastn_core::sitemap::toc::TocItemCompat> = vec![];
-        for child in section.subsections.iter().filter(|t| !t.skip && t.visible) {
+        for child in section.subsections.iter().filter(|t| !t.skip) {
             let child_to_subsection_compat = to_subsection_compat(child, current_document);
             if child_to_subsection_compat.is_active {
                 is_child_active = true;
@@ -216,7 +224,7 @@ pub fn to_sitemap_compat(
         fastn_core::sitemap::toc::TocItemCompat {
             url: Some(section.id.to_string()),
             number: None,
-            description: None,
+            description: section.extra_data.get("description").cloned(),
             title: section.title.clone(),
             path: None,
             is_heading: false,
@@ -233,22 +241,22 @@ pub fn to_sitemap_compat(
             readers: section.readers.clone(),
             writers: section.writers.clone(),
             is_disabled: false,
-            image_src: None,
+            image_src: section.extra_data.get("img-src").cloned().map(|v| v.into()),
             document: None,
         }
     }
 
-    fastn_core::sitemap::SiteMapCompat {
+    fastn_core::sitemap::SitemapCompat {
         sections: sitemap
             .sections
             .iter()
             .filter(|s| !s.skip)
             .map(|s| to_section_compat(s, current_document))
             .collect_vec(),
-        subsections: vec![],
+        sub_sections: vec![],
         toc: vec![],
         current_section: None,
-        current_subsection: None,
+        current_sub_section: None,
         current_page: None,
         readers: sitemap.readers.clone(),
         writers: sitemap.writers.clone(),

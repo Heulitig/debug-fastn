@@ -1,7 +1,10 @@
 {
   "name": "foo",
   "node": {
-    "classes": [],
+    "classes": [
+      "ft_common",
+      "ft_column"
+    ],
     "events": [],
     "node": "div",
     "display": "flex",
@@ -21,74 +24,8 @@
       }
     },
     "style": {
-      "align-items": {
-        "value": "start",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-bottom-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-left-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-right-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-style": {
-        "value": "solid",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-top-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "box-sizing": {
-        "value": "border-box",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "display": {
-        "value": "flex",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "flex-direction": {
-        "value": "column",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
       "height": {
         "value": "100%",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "justify-content": {
-        "value": "start",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "text-decoration": {
-        "value": "none",
         "properties": [],
         "line_number": null,
         "default": null
@@ -175,7 +112,8 @@
               }
             }
           }
-        }
+        },
+        "device": null
       }
     ],
     "text": {
@@ -188,7 +126,8 @@
     "data_id": "",
     "line_number": 0,
     "raw_data": null,
-    "web_component": null
+    "web_component": null,
+    "device": null
   },
   "html_data": {
     "title": {
@@ -198,6 +137,12 @@
       "default": null
     },
     "og_title": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
+    "twitter_title": {
       "value": null,
       "properties": [],
       "line_number": null,
@@ -215,7 +160,19 @@
       "line_number": null,
       "default": null
     },
+    "twitter_description": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
     "og_image": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
+    "twitter_image": {
       "value": null,
       "properties": [],
       "line_number": null,
@@ -229,107 +186,24 @@
     }
   },
   "bag": {
-    "foo#word-count": {
-      "WebComponent": {
-        "name": "foo#word-count",
-        "arguments": [
-          {
-            "name": "body",
-            "kind": {
-              "kind": "String",
-              "caption": false,
-              "body": true
-            },
-            "mutable": false,
-            "value": null,
-            "line_number": 2
-          },
-          {
-            "name": "start",
-            "kind": {
-              "kind": "Integer",
-              "caption": false,
-              "body": false
-            },
-            "mutable": false,
-            "value": {
-              "Value": {
-                "value": {
-                  "Integer": {
-                    "value": 0
-                  }
-                },
-                "is_mutable": false,
-                "line_number": 3
-              }
-            },
-            "line_number": 3
-          },
-          {
-            "name": "count",
-            "kind": {
-              "kind": "Integer",
-              "caption": false,
-              "body": false
-            },
-            "mutable": true,
-            "value": null,
-            "line_number": 4
-          },
-          {
-            "name": "separator",
-            "kind": {
-              "kind": "String",
-              "caption": false,
-              "body": false
-            },
-            "mutable": false,
-            "value": {
-              "Value": {
-                "value": {
-                  "String": {
-                    "text": ","
-                  }
-                },
-                "is_mutable": false,
-                "line_number": 5
-              }
-            },
-            "line_number": 5
-          }
-        ],
-        "js": {
-          "Value": {
-            "value": {
-              "String": {
-                "text": "ftd/t/web_component.js"
-              }
-            },
-            "is_mutable": false,
-            "line_number": 1
-          }
-        },
-        "line_number": 1
-      }
-    },
-    "foo#word-count:body:0": {
+    "foo#word-count:separator:0": {
       "Variable": {
-        "name": "foo#word-count:body:0",
+        "name": "foo#word-count:separator:0",
         "kind": {
           "kind": "String",
           "caption": false,
-          "body": true
+          "body": false
         },
         "mutable": false,
         "value": {
           "Value": {
             "value": {
               "String": {
-                "text": "This is the body."
+                "text": ","
               }
             },
             "is_mutable": false,
-            "line_number": 13
+            "line_number": 5
           }
         },
         "conditional_value": [],
@@ -362,31 +236,6 @@
         "is_static": false
       }
     },
-    "foo#word-count:separator:0": {
-      "Variable": {
-        "name": "foo#word-count:separator:0",
-        "kind": {
-          "kind": "String",
-          "caption": false,
-          "body": false
-        },
-        "mutable": false,
-        "value": {
-          "Value": {
-            "value": {
-              "String": {
-                "text": ","
-              }
-            },
-            "is_mutable": false,
-            "line_number": 5
-          }
-        },
-        "conditional_value": [],
-        "line_number": 10,
-        "is_static": true
-      }
-    },
     "foo#word-count:start:0": {
       "Variable": {
         "name": "foo#word-count:start:0",
@@ -411,6 +260,118 @@
         "line_number": 10,
         "is_static": true
       }
+    },
+    "foo#word-count:body:0": {
+      "Variable": {
+        "name": "foo#word-count:body:0",
+        "kind": {
+          "kind": "String",
+          "caption": false,
+          "body": true
+        },
+        "mutable": false,
+        "value": {
+          "Value": {
+            "value": {
+              "String": {
+                "text": "This is the body."
+              }
+            },
+            "is_mutable": false,
+            "line_number": 13
+          }
+        },
+        "conditional_value": [],
+        "line_number": 10,
+        "is_static": true
+      }
+    },
+    "foo#word-count": {
+      "WebComponent": {
+        "name": "foo#word-count",
+        "arguments": [
+          {
+            "name": "body",
+            "kind": {
+              "kind": "String",
+              "caption": false,
+              "body": true
+            },
+            "mutable": false,
+            "value": null,
+            "line_number": 2,
+            "access_modifier": "Public"
+          },
+          {
+            "name": "start",
+            "kind": {
+              "kind": "Integer",
+              "caption": false,
+              "body": false
+            },
+            "mutable": false,
+            "value": {
+              "Value": {
+                "value": {
+                  "Integer": {
+                    "value": 0
+                  }
+                },
+                "is_mutable": false,
+                "line_number": 3
+              }
+            },
+            "line_number": 3,
+            "access_modifier": "Public"
+          },
+          {
+            "name": "count",
+            "kind": {
+              "kind": "Integer",
+              "caption": false,
+              "body": false
+            },
+            "mutable": true,
+            "value": null,
+            "line_number": 4,
+            "access_modifier": "Public"
+          },
+          {
+            "name": "separator",
+            "kind": {
+              "kind": "String",
+              "caption": false,
+              "body": false
+            },
+            "mutable": false,
+            "value": {
+              "Value": {
+                "value": {
+                  "String": {
+                    "text": ","
+                  }
+                },
+                "is_mutable": false,
+                "line_number": 5
+              }
+            },
+            "line_number": 5,
+            "access_modifier": "Public"
+          }
+        ],
+        "js": {
+          "Value": {
+            "value": {
+              "String": {
+                "text": "ftd/ftd/t/assets/web_component.js"
+              }
+            },
+            "is_mutable": false,
+            "line_number": 1
+          }
+        },
+        "line_number": 1
+      }
     }
   },
   "aliases": {
@@ -422,7 +383,8 @@
   },
   "raw_nodes": {},
   "js": [
-    "ftd/t/web_component.js:type=\"module\""
+    "ftd/ftd/t/assets/web_component.js:type=\"module\""
   ],
-  "css": []
+  "css": [],
+  "rive_data": []
 }

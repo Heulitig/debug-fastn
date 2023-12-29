@@ -13,19 +13,22 @@ pub enum Error {
     SerdeJsonError(#[from] serde_json::Error),
 
     #[error("FTDError: {}", _0)]
-    FTDError(#[from] ftd::p1::Error),
+    FTDError(#[from] ftd::ftd2021::p1::Error),
 
     #[error("FTDP1Error: {}", _0)]
-    FTDP1Error(#[from] ftd::p11::Error),
+    FTDP1Error(#[from] ftd::p1::Error),
+
+    #[error("FTDAstError: {}", _0)]
+    FTDAstError(#[from] ftd::ast::Error),
 
     #[error("FTDExecError: {}", _0)]
     FTDExecError(#[from] ftd::executor::Error),
 
     #[error("FTDInterpreterError: {}", _0)]
-    FTDInterpreterError(#[from] ftd::interpreter2::Error),
+    FTDInterpreterError(#[from] ftd::interpreter::Error),
 
     #[error("FTDHtmlError: {}", _0)]
-    FTDHtmlError(#[from] ftd::html1::Error),
+    FTDHtmlError(#[from] ftd::html::Error),
 
     #[error("IgnoreError: {}", _0)]
     IgnoreError(#[from] ignore::Error),
@@ -57,6 +60,15 @@ pub enum Error {
     #[error("APIResponseError: {}", _0)]
     APIResponseError(String),
 
+    #[error("NotFoundError: {}", _0)]
+    NotFound(String),
+
+    #[error("FastnIoError: {io_error}, path: {path}")]
+    FastnIoError {
+        io_error: std::io::Error,
+        path: String,
+    },
+
     #[error("PackageError: {message}")]
     PackageError { message: String },
 
@@ -82,6 +94,27 @@ pub enum Error {
 
     #[error("TokioMPSCError2: {}", _0)]
     TokioMPSCError2(#[from] tokio::sync::mpsc::error::SendError<usize>),
+
+    #[error("UuidParseError: {}", _0)]
+    UuidParseError(#[from] uuid::Error),
+
+    #[error("MissingEnvironmentVariableError: {}", _0)]
+    EnvironmentVariableError(#[from] std::env::VarError),
+
+    #[error("DatabaseError: {message}")]
+    DatabaseError { message: String },
+
+    #[error("DatabaseQueryError: {}", _0)]
+    DatabaseQueryError(#[from] diesel::result::Error),
+
+    #[error("AssertError: {message}")]
+    AssertError { message: String },
+}
+
+impl From<std::convert::Infallible> for Error {
+    fn from(_: std::convert::Infallible) -> Self {
+        unreachable!()
+    }
 }
 
 impl Error {

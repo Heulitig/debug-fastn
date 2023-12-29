@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    
+    <meta content="fastn" name="generator">
+    
+    
+    <script>
+        let __fastn_package_name__ = "foo";
+    </script>
+
+    <script src="fastn-js.js"></script>
+    
+
+    <style>
+       
+    </style>
+</head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<body data-id="1"><div data-id="2" class="ft_column __w-1 __h-2"><div data-id="3" class="__c-3 __bgc-4">Hello from foo</div><div data-id="4" class="__c-5 __bgc-6">ftd.text says Hello</div><div data-id="5" class="ft_column __w-7 __h-8"><div data-id="6" class="ft_column __w-9 __h-10 __bgc-11"><div data-id="7" class="__c-12">Hello</div><div data-id="8" class="__c-13 __bgc-14">Hello from foo</div></div></div></div></body><style id="styles">
+    .__w-1 { width: 100%; }
+	.__h-2 { height: 100%; }
+	.__c-3 { color: #141414 !important; }
+	body.dark .__c-3 { color: #ffffff !important; }
+	.__c-3:visited { color: #141414 !important; }
+	body.dark  .__c-3:visited { color: #ffffff !important; }
+	.__bgc-4 { background-color: #e7e7e4; }
+	body.dark .__bgc-4 { background-color: #18181b; }
+	.__c-5 { color: #141414 !important; }
+	body.dark .__c-5 { color: #ffffff !important; }
+	.__c-5:visited { color: #141414 !important; }
+	body.dark  .__c-5:visited { color: #ffffff !important; }
+	.__bgc-6 { background-color: #e7e7e4; }
+	body.dark .__bgc-6 { background-color: #18181b; }
+	.__w-7 { width: 100%; }
+	.__h-8 { height: 200px; }
+	.__w-9 { width: 100%; }
+	.__h-10 { height: 100%; }
+	.__bgc-11 { background-color: #FDFAF1; }
+	body.dark .__bgc-11 { background-color: #111111; }
+	.__c-12 { color: #707070 !important; }
+	body.dark .__c-12 { color: #D9D9D9 !important; }
+	.__c-12:visited { color: #707070 !important; }
+	body.dark  .__c-12:visited { color: #D9D9D9 !important; }
+	.__c-13 { color: #333333 !important; }
+	body.dark .__c-13 { color: #FFFFFF !important; }
+	.__c-13:visited { color: #333333 !important; }
+	body.dark  .__c-13:visited { color: #FFFFFF !important; }
+	.__bgc-14 { background-color: #FFFFFF; }
+	body.dark .__bgc-14 { background-color: #000000; }
+    </style>
+<script>
+    (function() {
+        let main = function (parent) {
+  let __fastn_super_package_name__ = __fastn_package_name__;
+  __fastn_package_name__ = "foo";
+  try {
+    let parenti0 = foo__foo(parent, inherited);
+    let parenti1 = fastn_dom.createKernel(parent, fastn_dom.ElementKind.Text);
+    parenti1.setProperty(fastn_dom.PropertyKind.StringValue, "ftd.text says Hello", inherited);
+    parenti1.setProperty(fastn_dom.PropertyKind.Color, inherited.get("colors").get("text_strong"), inherited);
+    parenti1.setProperty(fastn_dom.PropertyKind.Background, fastn_dom.BackgroundStyle.Solid(inherited.get("colors").get("background").get("base")), inherited);
+    let parenti2 = fastn_dom.createKernel(parent, fastn_dom.ElementKind.Column);
+    parenti2.setProperty(fastn_dom.PropertyKind.Width, fastn_dom.Resizing.FillContainer, inherited);
+    parenti2.setProperty(fastn_dom.PropertyKind.Height, fastn_dom.Resizing.Fixed(fastn_dom.Length.Px(200)), inherited);
+    let __$$inherited$$__parenti2 = fastn.recordInstance({
+      ...inherited.getAllFields(),
+      colors: global.foo__colors
+    });
+    parenti2.setProperty(fastn_dom.PropertyKind.Children, fastn.mutableList([function (root, inherited) {
+      let rooti0 = fastn_dom.createKernel(root, fastn_dom.ElementKind.Column);
+      rooti0.setProperty(fastn_dom.PropertyKind.Width, fastn_dom.Resizing.FillContainer, inherited);
+      rooti0.setProperty(fastn_dom.PropertyKind.Height, fastn_dom.Resizing.FillContainer, inherited);
+      rooti0.setProperty(fastn_dom.PropertyKind.Background, fastn_dom.BackgroundStyle.Solid(inherited.get("colors").get("background").get("step_1")), inherited);
+      rooti0.setProperty(fastn_dom.PropertyKind.Children, fastn.mutableList([function (root, inherited) {
+        let rooti0 = fastn_dom.createKernel(root, fastn_dom.ElementKind.Text);
+        rooti0.setProperty(fastn_dom.PropertyKind.StringValue, "Hello", inherited);
+        rooti0.setProperty(fastn_dom.PropertyKind.Color, inherited.get("colors").get("text"), inherited);
+      },
+      function (root, inherited) {
+        let rooti0 = foo__foo(root, inherited);
+      }
+      ]), inherited);
+    }
+    ]), __$$inherited$$__parenti2);
+  } finally {
+    __fastn_package_name__ = __fastn_super_package_name__;
+  }
+}
+global["main"] = main;
+let foo__foo = function (parent, inherited, args) {
+  let __fastn_super_package_name__ = __fastn_package_name__;
+  __fastn_package_name__ = "foo";
+  try {
+    let __args__ = {
+    };
+    inherited = fastn_utils.getInheritedValues(__args__, inherited, args);
+    __args__ = fastn_utils.getArgs(__args__, args);
+    let parenti0 = fastn_dom.createKernel(parent, fastn_dom.ElementKind.Text);
+    parenti0.setProperty(fastn_dom.PropertyKind.StringValue, "Hello from foo", inherited);
+    parenti0.setProperty(fastn_dom.PropertyKind.Color, inherited.get("colors").get("text_strong"), inherited);
+    parenti0.setProperty(fastn_dom.PropertyKind.Background, fastn_dom.BackgroundStyle.Solid(inherited.get("colors").get("background").get("base")), inherited);
+    return parenti0;
+  } finally {
+    __fastn_package_name__ = __fastn_super_package_name__;
+  }
+}
+global["foo__foo"] = foo__foo;
+fastn_utils.createNestedObject(global, "foo__base_", fastn.recordInstance({
+  light: "#FFFFFF",
+  dark: "#000000"
+}));
+fastn_utils.createNestedObject(global, "foo__step_1_", fastn.recordInstance({
+  light: "#FDFAF1",
+  dark: "#111111"
+}));
+fastn_utils.createNestedObject(global, "foo__step_2_", fastn.recordInstance({
+  light: "#fbf3dc",
+  dark: "#2b2b2b"
+}));
+fastn_utils.createNestedObject(global, "foo__overlay_", fastn.recordInstance({
+  light: "#000000",
+  dark: "#000000"
+}));
+fastn_utils.createNestedObject(global, "foo__code_", fastn.recordInstance({
+  light: "#f5f5f5",
+  dark: "#21222c"
+}));
+fastn_utils.createNestedObject(global, "foo__background_", fastn.recordInstance({
+  base: global.foo__base_,
+  step_1: global.foo__step_1_,
+  step_2: global.foo__step_2_,
+  overlay: global.foo__overlay_,
+  code: global.foo__code_
+}));
+fastn_utils.createNestedObject(global, "foo__border_", fastn.recordInstance({
+  light: "#f0ece2",
+  dark: "#434547"
+}));
+fastn_utils.createNestedObject(global, "foo__border_strong_", fastn.recordInstance({
+  light: "#D9D9D9",
+  dark: "#333333"
+}));
+fastn_utils.createNestedObject(global, "foo__text_", fastn.recordInstance({
+  light: "#707070",
+  dark: "#D9D9D9"
+}));
+fastn_utils.createNestedObject(global, "foo__text_strong_", fastn.recordInstance({
+  light: "#333333",
+  dark: "#FFFFFF"
+}));
+fastn_utils.createNestedObject(global, "foo__shadow_", fastn.recordInstance({
+  light: "#EF8435",
+  dark: "#EF8435"
+}));
+fastn_utils.createNestedObject(global, "foo__scrim_", fastn.recordInstance({
+  light: "#393939",
+  dark: "#393939"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_base_", fastn.recordInstance({
+  light: "#EF8435",
+  dark: "#EF8435"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_hover_", fastn.recordInstance({
+  light: "#D77730",
+  dark: "#D77730"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_pressed_", fastn.recordInstance({
+  light: "#BF6A2A",
+  dark: "#BF6A2A"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_disabled_", fastn.recordInstance({
+  light: "#FAD9C0",
+  dark: "#FAD9C0"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_focused_", fastn.recordInstance({
+  light: "#B36328",
+  dark: "#B36328"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_border_", fastn.recordInstance({
+  light: "#F3A063",
+  dark: "#F3A063"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_text_", fastn.recordInstance({
+  light: "#512403",
+  dark: "#512403"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_text_disabled_", fastn.recordInstance({
+  light: "#f2a164",
+  dark: "#f2a164"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_border_disabled_", fastn.recordInstance({
+  light: "#fad9c0",
+  dark: "#fad9c0"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_primary_", fastn.recordInstance({
+  base: global.foo__cta_primary_base_,
+  hover: global.foo__cta_primary_hover_,
+  pressed: global.foo__cta_primary_pressed_,
+  disabled: global.foo__cta_primary_disabled_,
+  focused: global.foo__cta_primary_focused_,
+  border: global.foo__cta_primary_border_,
+  border_disabled: global.foo__cta_primary_border_disabled_,
+  text: global.foo__cta_primary_text_,
+  text_disabled: global.foo__cta_primary_text_disabled_
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_base_", fastn.recordInstance({
+  light: "#EBE8E5",
+  dark: "#EBE8E5"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_hover_", fastn.recordInstance({
+  light: "#D4D1CE",
+  dark: "#D4D1CE"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_pressed_", fastn.recordInstance({
+  light: "#BCBAB7",
+  dark: "#BCBAB7"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_disabled_", fastn.recordInstance({
+  light: "#F9F8F7",
+  dark: "#F9F8F7"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_focused_", fastn.recordInstance({
+  light: "#B0AEAC",
+  dark: "#B0AEAC"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_border_", fastn.recordInstance({
+  light: "#B0AEAC",
+  dark: "#B0AEAC"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_text_", fastn.recordInstance({
+  light: "#333333",
+  dark: "#333333"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_text_disabled_", fastn.recordInstance({
+  light: "#304655",
+  dark: "#fff"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_border_disabled_", fastn.recordInstance({
+  light: "#304655",
+  dark: "#f1dac0"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_secondary_", fastn.recordInstance({
+  base: global.foo__cta_secondary_base_,
+  hover: global.foo__cta_secondary_hover_,
+  pressed: global.foo__cta_secondary_pressed_,
+  disabled: global.foo__cta_secondary_disabled_,
+  focused: global.foo__cta_secondary_focused_,
+  border: global.foo__cta_secondary_border_,
+  border_disabled: global.foo__cta_secondary_border_disabled_,
+  text: global.foo__cta_secondary_text_,
+  text_disabled: global.foo__cta_secondary_text_disabled_
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_base_", fastn.recordInstance({
+  light: "#4A6490",
+  dark: "#4A6490"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_hover_", fastn.recordInstance({
+  light: "#3d5276",
+  dark: "#3d5276"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_pressed_", fastn.recordInstance({
+  light: "#2b3a54",
+  dark: "#2b3a54"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_disabled_", fastn.recordInstance({
+  light: "rgba(74, 100, 144, 0.4)",
+  dark: "rgba(74, 100, 144, 0.4)"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_focused_", fastn.recordInstance({
+  light: "#6882b1",
+  dark: "#6882b1"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_border_", fastn.recordInstance({
+  light: "#4e6997",
+  dark: "#4e6997"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_text_", fastn.recordInstance({
+  light: "#ffffff",
+  dark: "#ffffff"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_text_disabled_", fastn.recordInstance({
+  light: "#304655",
+  dark: "#fff"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_border_disabled_", fastn.recordInstance({
+  light: "#304655",
+  dark: "#f1dac0"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_tertiary_", fastn.recordInstance({
+  base: global.foo__cta_tertiary_base_,
+  hover: global.foo__cta_tertiary_hover_,
+  pressed: global.foo__cta_tertiary_pressed_,
+  disabled: global.foo__cta_tertiary_disabled_,
+  focused: global.foo__cta_tertiary_focused_,
+  border: global.foo__cta_tertiary_border_,
+  border_disabled: global.foo__cta_tertiary_border_disabled_,
+  text: global.foo__cta_tertiary_text_,
+  text_disabled: global.foo__cta_tertiary_text_disabled_
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_base_", fastn.recordInstance({
+  light: "#F9E4E1",
+  dark: "#F9E4E1"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_hover_", fastn.recordInstance({
+  light: "#F1BDB6",
+  dark: "#F1BDB6"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_pressed_", fastn.recordInstance({
+  light: "#D46A63",
+  dark: "#D46A63"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_disabled_", fastn.recordInstance({
+  light: "#FAECEB",
+  dark: "#FAECEB"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_focused_", fastn.recordInstance({
+  light: "#D97973",
+  dark: "#D97973"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_border_", fastn.recordInstance({
+  light: "#E9968C",
+  dark: "#E9968C"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_text_", fastn.recordInstance({
+  light: "#D84836",
+  dark: "#D84836"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_text_disabled_", fastn.recordInstance({
+  light: "#304655",
+  dark: "#fff"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_border_disabled_", fastn.recordInstance({
+  light: "#304655",
+  dark: "#f1dac0"
+}));
+fastn_utils.createNestedObject(global, "foo__cta_danger_", fastn.recordInstance({
+  base: global.foo__cta_danger_base_,
+  hover: global.foo__cta_danger_hover_,
+  pressed: global.foo__cta_danger_pressed_,
+  disabled: global.foo__cta_danger_disabled_,
+  focused: global.foo__cta_danger_focused_,
+  border: global.foo__cta_danger_border_,
+  border_disabled: global.foo__cta_danger_border_disabled_,
+  text: global.foo__cta_danger_text_,
+  text_disabled: global.foo__cta_danger_text_disabled_
+}));
+fastn_utils.createNestedObject(global, "foo__accent_primary_", fastn.recordInstance({
+  light: "#EF8435",
+  dark: "#EF8435"
+}));
+fastn_utils.createNestedObject(global, "foo__accent_secondary_", fastn.recordInstance({
+  light: "#EBE8E5",
+  dark: "#EBE8E5"
+}));
+fastn_utils.createNestedObject(global, "foo__accent_tertiary_", fastn.recordInstance({
+  light: "#c5cbd7",
+  dark: "#c5cbd7"
+}));
+fastn_utils.createNestedObject(global, "foo__accent_", fastn.recordInstance({
+  primary: global.foo__accent_primary_,
+  secondary: global.foo__accent_secondary_,
+  tertiary: global.foo__accent_tertiary_
+}));
+fastn_utils.createNestedObject(global, "foo__error_base_", fastn.recordInstance({
+  light: "#F9E4E1",
+  dark: "#4f2a25c9"
+}));
+fastn_utils.createNestedObject(global, "foo__error_text_", fastn.recordInstance({
+  light: "#D84836",
+  dark: "#D84836"
+}));
+fastn_utils.createNestedObject(global, "foo__error_border_", fastn.recordInstance({
+  light: "#E9968C",
+  dark: "#E9968C"
+}));
+fastn_utils.createNestedObject(global, "foo__error_btb_", fastn.recordInstance({
+  base: global.foo__error_base_,
+  text: global.foo__error_text_,
+  border: global.foo__error_border_
+}));
+fastn_utils.createNestedObject(global, "foo__success_base_", fastn.recordInstance({
+  light: "#DCEFE4",
+  dark: "#033a1bb8"
+}));
+fastn_utils.createNestedObject(global, "foo__success_text_", fastn.recordInstance({
+  light: "#3E8D61",
+  dark: "#159f52"
+}));
+fastn_utils.createNestedObject(global, "foo__success_border_", fastn.recordInstance({
+  light: "#95D0AF",
+  dark: "#95D0AF"
+}));
+fastn_utils.createNestedObject(global, "foo__success_btb_", fastn.recordInstance({
+  base: global.foo__success_base_,
+  text: global.foo__success_text_,
+  border: global.foo__success_border_
+}));
+fastn_utils.createNestedObject(global, "foo__info_base_", fastn.recordInstance({
+  light: "#DAE7FB",
+  dark: "#233a5dc7"
+}));
+fastn_utils.createNestedObject(global, "foo__info_text_", fastn.recordInstance({
+  light: "#5290EC",
+  dark: "#5290EC"
+}));
+fastn_utils.createNestedObject(global, "foo__info_border_", fastn.recordInstance({
+  light: "#7EACF1",
+  dark: "#7EACF1"
+}));
+fastn_utils.createNestedObject(global, "foo__info_btb_", fastn.recordInstance({
+  base: global.foo__info_base_,
+  text: global.foo__info_text_,
+  border: global.foo__info_border_
+}));
+fastn_utils.createNestedObject(global, "foo__warning_base_", fastn.recordInstance({
+  light: "#FDF7F1",
+  dark: "#3b2c1ee6"
+}));
+fastn_utils.createNestedObject(global, "foo__warning_text_", fastn.recordInstance({
+  light: "#E78B3E",
+  dark: "#E78B3E"
+}));
+fastn_utils.createNestedObject(global, "foo__warning_border_", fastn.recordInstance({
+  light: "#F2C097",
+  dark: "#F2C097"
+}));
+fastn_utils.createNestedObject(global, "foo__warning_btb_", fastn.recordInstance({
+  base: global.foo__warning_base_,
+  text: global.foo__warning_text_,
+  border: global.foo__warning_border_
+}));
+fastn_utils.createNestedObject(global, "foo__custom_one_", fastn.recordInstance({
+  light: "#4AA35C",
+  dark: "#4AA35C"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_two_", fastn.recordInstance({
+  light: "#5C2860",
+  dark: "#5C2860"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_three_", fastn.recordInstance({
+  light: "#EBBE52",
+  dark: "#EBBE52"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_four_", fastn.recordInstance({
+  light: "#FDFAF1",
+  dark: "#111111"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_five_", fastn.recordInstance({
+  light: "#FBF5E2",
+  dark: "#222222"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_six_", fastn.recordInstance({
+  light: "#ef8dd6",
+  dark: "#ef8dd6"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_seven_", fastn.recordInstance({
+  light: "#7564be",
+  dark: "#7564be"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_eight_", fastn.recordInstance({
+  light: "#d554b3",
+  dark: "#d554b3"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_nine_", fastn.recordInstance({
+  light: "#ec8943",
+  dark: "#ec8943"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_ten_", fastn.recordInstance({
+  light: "#da7a4a",
+  dark: "#da7a4a"
+}));
+fastn_utils.createNestedObject(global, "foo__custom_", fastn.recordInstance({
+  one: global.foo__custom_one_,
+  two: global.foo__custom_two_,
+  three: global.foo__custom_three_,
+  four: global.foo__custom_four_,
+  five: global.foo__custom_five_,
+  six: global.foo__custom_six_,
+  seven: global.foo__custom_seven_,
+  eight: global.foo__custom_eight_,
+  nine: global.foo__custom_nine_,
+  ten: global.foo__custom_ten_
+}));
+fastn_utils.createNestedObject(global, "foo__colors", fastn.recordInstance({
+  background: global.foo__background_,
+  border: global.foo__border_,
+  border_strong: global.foo__border_strong_,
+  text: global.foo__text_,
+  text_strong: global.foo__text_strong_,
+  shadow: global.foo__shadow_,
+  scrim: global.foo__scrim_,
+  cta_primary: global.foo__cta_primary_,
+  cta_secondary: global.foo__cta_secondary_,
+  cta_tertiary: global.foo__cta_tertiary_,
+  cta_danger: global.foo__cta_danger_,
+  accent: global.foo__accent_,
+  error: global.foo__error_btb_,
+  success: global.foo__success_btb_,
+  info: global.foo__info_btb_,
+  warning: global.foo__warning_btb_,
+  custom: global.foo__custom_
+}));
+fastn_dom.codeData.availableThemes["coldark-theme.dark"] = "../../theme_css/coldark-theme.dark.css";
+fastn_dom.codeData.availableThemes["coldark-theme.light"] = "../../theme_css/coldark-theme.light.css";
+fastn_dom.codeData.availableThemes["coy-theme"] = "../../theme_css/coy-theme.css";
+fastn_dom.codeData.availableThemes["dracula-theme"] = "../../theme_css/dracula-theme.css";
+fastn_dom.codeData.availableThemes["duotone-theme.dark"] = "../../theme_css/duotone-theme.dark.css";
+fastn_dom.codeData.availableThemes["duotone-theme.earth"] = "../../theme_css/duotone-theme.earth.css";
+fastn_dom.codeData.availableThemes["duotone-theme.forest"] = "../../theme_css/duotone-theme.forest.css";
+fastn_dom.codeData.availableThemes["duotone-theme.light"] = "../../theme_css/duotone-theme.light.css";
+fastn_dom.codeData.availableThemes["duotone-theme.sea"] = "../../theme_css/duotone-theme.sea.css";
+fastn_dom.codeData.availableThemes["duotone-theme.space"] = "../../theme_css/duotone-theme.space.css";
+fastn_dom.codeData.availableThemes["fastn-theme.dark"] = "../../theme_css/fastn-theme.dark.css";
+fastn_dom.codeData.availableThemes["fastn-theme.light"] = "../../theme_css/fastn-theme.light.css";
+fastn_dom.codeData.availableThemes["fire.light"] = "../../theme_css/fire.light.css";
+fastn_dom.codeData.availableThemes["gruvbox-theme.dark"] = "../../theme_css/gruvbox-theme.dark.css";
+fastn_dom.codeData.availableThemes["gruvbox-theme.light"] = "../../theme_css/gruvbox-theme.light.css";
+fastn_dom.codeData.availableThemes["laserwave-theme"] = "../../theme_css/laserwave-theme.css";
+fastn_dom.codeData.availableThemes["material-theme.dark"] = "../../theme_css/material-theme.dark.css";
+fastn_dom.codeData.availableThemes["material-theme.light"] = "../../theme_css/material-theme.light.css";
+fastn_dom.codeData.availableThemes["nightowl-theme"] = "../../theme_css/nightowl-theme.css";
+fastn_dom.codeData.availableThemes["one-theme.dark"] = "../../theme_css/one-theme.dark.css";
+fastn_dom.codeData.availableThemes["one-theme.light"] = "../../theme_css/one-theme.light.css";
+fastn_dom.codeData.availableThemes["vs-theme.dark"] = "../../theme_css/vs-theme.dark.css";
+fastn_dom.codeData.availableThemes["vs-theme.light"] = "../../theme_css/vs-theme.light.css";
+fastn_dom.codeData.availableThemes["ztouch-theme"] = "../../theme_css/ztouch-theme.css";
+
+        let main_wrapper = function (parent) {
+            let parenti0 = fastn_dom.createKernel(parent, fastn_dom.ElementKind.Column);
+            parenti0.setProperty(fastn_dom.PropertyKind.Width, fastn_dom.Resizing.FillContainer, inherited);
+            parenti0.setProperty(fastn_dom.PropertyKind.Height, fastn_dom.Resizing.FillContainer, inherited);
+            main(parenti0);
+        }
+        fastnVirtual.doubleBuffer(main_wrapper);
+        ftd.post_init();
+    })();
+
+    window.onload = function() {
+        fastn_utils.resetFullHeight();
+        fastn_utils.setFullHeight();
+        ftd.emit_on_load();
+    };
+</script>
+</html>

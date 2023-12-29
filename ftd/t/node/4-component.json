@@ -1,7 +1,10 @@
 {
   "name": "foo",
   "node": {
-    "classes": [],
+    "classes": [
+      "ft_common",
+      "ft_column"
+    ],
     "events": [],
     "node": "div",
     "display": "flex",
@@ -21,74 +24,8 @@
       }
     },
     "style": {
-      "align-items": {
-        "value": "start",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-bottom-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-left-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-right-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-style": {
-        "value": "solid",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-top-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "box-sizing": {
-        "value": "border-box",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "display": {
-        "value": "flex",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "flex-direction": {
-        "value": "column",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
       "height": {
         "value": "100%",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "justify-content": {
-        "value": "start",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "text-decoration": {
-        "value": "none",
         "properties": [],
         "line_number": null,
         "default": null
@@ -102,7 +39,10 @@
     },
     "children": [
       {
-        "classes": [],
+        "classes": [
+          "ft_common",
+          "ft_column"
+        ],
         "events": [],
         "node": "div",
         "display": "flex",
@@ -121,89 +61,11 @@
             "default": null
           }
         },
-        "style": {
-          "align-items": {
-            "value": "start",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-bottom-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-left-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-right-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-style": {
-            "value": "solid",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-top-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "box-sizing": {
-            "value": "border-box",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "display": {
-            "value": "flex",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "flex-direction": {
-            "value": "column",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "height": {
-            "value": "auto",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "justify-content": {
-            "value": "start",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "text-decoration": {
-            "value": "none",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "width": {
-            "value": "auto",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          }
-        },
+        "style": {},
         "children": [
           {
             "classes": [
+              "ft_common",
               "ft_md"
             ],
             "events": [],
@@ -224,62 +86,7 @@
                 "default": null
               }
             },
-            "style": {
-              "border-bottom-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-left-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-right-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-style": {
-                "value": "solid",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-top-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "box-sizing": {
-                "value": "border-box",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "height": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "text-decoration": {
-                "value": "none",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "width": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              }
-            },
+            "style": {},
             "children": [],
             "text": {
               "value": "Hello",
@@ -315,7 +122,8 @@
             "data_id": "0,0",
             "line_number": 6,
             "raw_data": null,
-            "web_component": null
+            "web_component": null,
+            "device": null
           }
         ],
         "text": {
@@ -328,10 +136,14 @@
         "data_id": "0",
         "line_number": 4,
         "raw_data": null,
-        "web_component": null
+        "web_component": null,
+        "device": null
       },
       {
-        "classes": [],
+        "classes": [
+          "ft_common",
+          "ft_column"
+        ],
         "events": [],
         "node": "div",
         "display": "flex",
@@ -350,89 +162,11 @@
             "default": null
           }
         },
-        "style": {
-          "align-items": {
-            "value": "start",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-bottom-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-left-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-right-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-style": {
-            "value": "solid",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-top-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "box-sizing": {
-            "value": "border-box",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "display": {
-            "value": "flex",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "flex-direction": {
-            "value": "column",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "height": {
-            "value": "auto",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "justify-content": {
-            "value": "start",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "text-decoration": {
-            "value": "none",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "width": {
-            "value": "auto",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          }
-        },
+        "style": {},
         "children": [
           {
             "classes": [
+              "ft_common",
               "ft_md"
             ],
             "events": [],
@@ -453,62 +187,7 @@
                 "default": null
               }
             },
-            "style": {
-              "border-bottom-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-left-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-right-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-style": {
-                "value": "solid",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-top-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "box-sizing": {
-                "value": "border-box",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "height": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "text-decoration": {
-                "value": "none",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "width": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              }
-            },
+            "style": {},
             "children": [],
             "text": {
               "value": "Hello Again",
@@ -544,7 +223,8 @@
             "data_id": "1,0",
             "line_number": 6,
             "raw_data": null,
-            "web_component": null
+            "web_component": null,
+            "device": null
           }
         ],
         "text": {
@@ -557,7 +237,8 @@
         "data_id": "1",
         "line_number": 4,
         "raw_data": null,
-        "web_component": null
+        "web_component": null,
+        "device": null
       }
     ],
     "text": {
@@ -570,7 +251,8 @@
     "data_id": "",
     "line_number": 0,
     "raw_data": null,
-    "web_component": null
+    "web_component": null,
+    "device": null
   },
   "html_data": {
     "title": {
@@ -580,6 +262,12 @@
       "default": null
     },
     "og_title": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
+    "twitter_title": {
       "value": null,
       "properties": [],
       "line_number": null,
@@ -597,7 +285,19 @@
       "line_number": null,
       "default": null
     },
+    "twitter_description": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
     "og_image": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
+    "twitter_image": {
       "value": null,
       "properties": [],
       "line_number": null,
@@ -611,6 +311,56 @@
     }
   },
   "bag": {
+    "foo#print:name:1": {
+      "Variable": {
+        "name": "foo#print:name:1",
+        "kind": {
+          "kind": "String",
+          "caption": false,
+          "body": false
+        },
+        "mutable": false,
+        "value": {
+          "Value": {
+            "value": {
+              "String": {
+                "text": "Hello Again"
+              }
+            },
+            "is_mutable": false,
+            "line_number": 17
+          }
+        },
+        "conditional_value": [],
+        "line_number": 16,
+        "is_static": true
+      }
+    },
+    "foo#print:name:0": {
+      "Variable": {
+        "name": "foo#print:name:0",
+        "kind": {
+          "kind": "String",
+          "caption": false,
+          "body": false
+        },
+        "mutable": false,
+        "value": {
+          "Value": {
+            "value": {
+              "String": {
+                "text": "Hello"
+              }
+            },
+            "is_mutable": false,
+            "line_number": 14
+          }
+        },
+        "conditional_value": [],
+        "line_number": 13,
+        "is_static": true
+      }
+    },
     "foo#print": {
       "Component": {
         "name": "foo#print",
@@ -624,7 +374,8 @@
             },
             "mutable": false,
             "value": null,
-            "line_number": 2
+            "line_number": 2,
+            "access_modifier": "Public"
           }
         ],
         "definition": {
@@ -722,56 +473,6 @@
         "css": null,
         "line_number": 1
       }
-    },
-    "foo#print:name:0": {
-      "Variable": {
-        "name": "foo#print:name:0",
-        "kind": {
-          "kind": "String",
-          "caption": false,
-          "body": false
-        },
-        "mutable": false,
-        "value": {
-          "Value": {
-            "value": {
-              "String": {
-                "text": "Hello"
-              }
-            },
-            "is_mutable": false,
-            "line_number": 14
-          }
-        },
-        "conditional_value": [],
-        "line_number": 13,
-        "is_static": true
-      }
-    },
-    "foo#print:name:1": {
-      "Variable": {
-        "name": "foo#print:name:1",
-        "kind": {
-          "kind": "String",
-          "caption": false,
-          "body": false
-        },
-        "mutable": false,
-        "value": {
-          "Value": {
-            "value": {
-              "String": {
-                "text": "Hello Again"
-              }
-            },
-            "is_mutable": false,
-            "line_number": 17
-          }
-        },
-        "conditional_value": [],
-        "line_number": 16,
-        "is_static": true
-      }
     }
   },
   "aliases": {
@@ -783,5 +484,6 @@
   },
   "raw_nodes": {},
   "js": [],
-  "css": []
+  "css": [],
+  "rive_data": []
 }

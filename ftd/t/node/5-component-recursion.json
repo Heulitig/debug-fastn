@@ -1,7 +1,10 @@
 {
   "name": "foo",
   "node": {
-    "classes": [],
+    "classes": [
+      "ft_common",
+      "ft_column"
+    ],
     "events": [],
     "node": "div",
     "display": "flex",
@@ -21,74 +24,8 @@
       }
     },
     "style": {
-      "align-items": {
-        "value": "start",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-bottom-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-left-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-right-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-style": {
-        "value": "solid",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "border-top-width": {
-        "value": "0px",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "box-sizing": {
-        "value": "border-box",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "display": {
-        "value": "flex",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "flex-direction": {
-        "value": "column",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
       "height": {
         "value": "100%",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "justify-content": {
-        "value": "start",
-        "properties": [],
-        "line_number": null,
-        "default": null
-      },
-      "text-decoration": {
-        "value": "none",
         "properties": [],
         "line_number": null,
         "default": null
@@ -102,7 +39,10 @@
     },
     "children": [
       {
-        "classes": [],
+        "classes": [
+          "ft_common",
+          "ft_column"
+        ],
         "events": [],
         "node": "div",
         "display": "flex",
@@ -122,72 +62,6 @@
           }
         },
         "style": {
-          "align-items": {
-            "value": "start",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-bottom-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-left-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-right-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-style": {
-            "value": "solid",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "border-top-width": {
-            "value": "0px",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "box-sizing": {
-            "value": "border-box",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "display": {
-            "value": "flex",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "flex-direction": {
-            "value": "column",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "height": {
-            "value": "auto",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "justify-content": {
-            "value": "start",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
           "padding": {
             "value": "30px",
             "properties": [
@@ -231,23 +105,12 @@
             ],
             "line_number": 32,
             "default": null
-          },
-          "text-decoration": {
-            "value": "none",
-            "properties": [],
-            "line_number": null,
-            "default": null
-          },
-          "width": {
-            "value": "auto",
-            "properties": [],
-            "line_number": null,
-            "default": null
           }
         },
         "children": [
           {
             "classes": [
+              "ft_common",
               "ft_md"
             ],
             "events": [],
@@ -268,62 +131,7 @@
                 "default": null
               }
             },
-            "style": {
-              "border-bottom-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-left-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-right-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-style": {
-                "value": "solid",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-top-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "box-sizing": {
-                "value": "border-box",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "height": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "text-decoration": {
-                "value": "none",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "width": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              }
-            },
+            "style": {},
             "children": [],
             "text": {
               "value": "TOC title 1",
@@ -359,10 +167,14 @@
             "data_id": "0,0",
             "line_number": 34,
             "raw_data": null,
-            "web_component": null
+            "web_component": null,
+            "device": null
           },
           {
-            "classes": [],
+            "classes": [
+              "ft_common",
+              "ft_column"
+            ],
             "events": [],
             "node": "div",
             "display": "flex",
@@ -382,72 +194,6 @@
               }
             },
             "style": {
-              "align-items": {
-                "value": "start",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-bottom-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-left-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-right-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-style": {
-                "value": "solid",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-top-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "box-sizing": {
-                "value": "border-box",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "display": {
-                "value": "flex",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "flex-direction": {
-                "value": "column",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "height": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "justify-content": {
-                "value": "start",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
               "padding": {
                 "value": "30px",
                 "properties": [
@@ -491,23 +237,12 @@
                 ],
                 "line_number": 32,
                 "default": null
-              },
-              "text-decoration": {
-                "value": "none",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "width": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
               }
             },
             "children": [
               {
                 "classes": [
+                  "ft_common",
                   "ft_md"
                 ],
                 "events": [],
@@ -528,62 +263,7 @@
                     "default": null
                   }
                 },
-                "style": {
-                  "border-bottom-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-left-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-right-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-style": {
-                    "value": "solid",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-top-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "box-sizing": {
-                    "value": "border-box",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "height": {
-                    "value": "auto",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "text-decoration": {
-                    "value": "none",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "width": {
-                    "value": "auto",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  }
-                },
+                "style": {},
                 "children": [],
                 "text": {
                   "value": "TOC title 2",
@@ -619,7 +299,8 @@
                 "data_id": "0,1,0",
                 "line_number": 34,
                 "raw_data": null,
-                "web_component": null
+                "web_component": null,
+                "device": null
               }
             ],
             "text": {
@@ -632,10 +313,14 @@
             "data_id": "0,1",
             "line_number": 31,
             "raw_data": null,
-            "web_component": null
+            "web_component": null,
+            "device": null
           },
           {
-            "classes": [],
+            "classes": [
+              "ft_common",
+              "ft_column"
+            ],
             "events": [],
             "node": "div",
             "display": "flex",
@@ -655,72 +340,6 @@
               }
             },
             "style": {
-              "align-items": {
-                "value": "start",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-bottom-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-left-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-right-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-style": {
-                "value": "solid",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "border-top-width": {
-                "value": "0px",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "box-sizing": {
-                "value": "border-box",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "display": {
-                "value": "flex",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "flex-direction": {
-                "value": "column",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "height": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "justify-content": {
-                "value": "start",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
               "padding": {
                 "value": "30px",
                 "properties": [
@@ -764,23 +383,12 @@
                 ],
                 "line_number": 32,
                 "default": null
-              },
-              "text-decoration": {
-                "value": "none",
-                "properties": [],
-                "line_number": null,
-                "default": null
-              },
-              "width": {
-                "value": "auto",
-                "properties": [],
-                "line_number": null,
-                "default": null
               }
             },
             "children": [
               {
                 "classes": [
+                  "ft_common",
                   "ft_md"
                 ],
                 "events": [],
@@ -801,62 +409,7 @@
                     "default": null
                   }
                 },
-                "style": {
-                  "border-bottom-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-left-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-right-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-style": {
-                    "value": "solid",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-top-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "box-sizing": {
-                    "value": "border-box",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "height": {
-                    "value": "auto",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "text-decoration": {
-                    "value": "none",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "width": {
-                    "value": "auto",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  }
-                },
+                "style": {},
                 "children": [],
                 "text": {
                   "value": "TOC title 3",
@@ -892,10 +445,14 @@
                 "data_id": "0,2,0",
                 "line_number": 34,
                 "raw_data": null,
-                "web_component": null
+                "web_component": null,
+                "device": null
               },
               {
-                "classes": [],
+                "classes": [
+                  "ft_common",
+                  "ft_column"
+                ],
                 "events": [],
                 "node": "div",
                 "display": "flex",
@@ -915,72 +472,6 @@
                   }
                 },
                 "style": {
-                  "align-items": {
-                    "value": "start",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-bottom-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-left-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-right-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-style": {
-                    "value": "solid",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "border-top-width": {
-                    "value": "0px",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "box-sizing": {
-                    "value": "border-box",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "display": {
-                    "value": "flex",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "flex-direction": {
-                    "value": "column",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "height": {
-                    "value": "auto",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "justify-content": {
-                    "value": "start",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
                   "padding": {
                     "value": "30px",
                     "properties": [
@@ -1024,23 +515,12 @@
                     ],
                     "line_number": 32,
                     "default": null
-                  },
-                  "text-decoration": {
-                    "value": "none",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
-                  },
-                  "width": {
-                    "value": "auto",
-                    "properties": [],
-                    "line_number": null,
-                    "default": null
                   }
                 },
                 "children": [
                   {
                     "classes": [
+                      "ft_common",
                       "ft_md"
                     ],
                     "events": [],
@@ -1061,62 +541,7 @@
                         "default": null
                       }
                     },
-                    "style": {
-                      "border-bottom-width": {
-                        "value": "0px",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "border-left-width": {
-                        "value": "0px",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "border-right-width": {
-                        "value": "0px",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "border-style": {
-                        "value": "solid",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "border-top-width": {
-                        "value": "0px",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "box-sizing": {
-                        "value": "border-box",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "height": {
-                        "value": "auto",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "text-decoration": {
-                        "value": "none",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      },
-                      "width": {
-                        "value": "auto",
-                        "properties": [],
-                        "line_number": null,
-                        "default": null
-                      }
-                    },
+                    "style": {},
                     "children": [],
                     "text": {
                       "value": "TOC title 4",
@@ -1152,7 +577,8 @@
                     "data_id": "0,2,1,0",
                     "line_number": 34,
                     "raw_data": null,
-                    "web_component": null
+                    "web_component": null,
+                    "device": null
                   }
                 ],
                 "text": {
@@ -1165,7 +591,8 @@
                 "data_id": "0,2,1",
                 "line_number": 31,
                 "raw_data": null,
-                "web_component": null
+                "web_component": null,
+                "device": null
               }
             ],
             "text": {
@@ -1178,7 +605,8 @@
             "data_id": "0,2",
             "line_number": 31,
             "raw_data": null,
-            "web_component": null
+            "web_component": null,
+            "device": null
           }
         ],
         "text": {
@@ -1191,7 +619,8 @@
         "data_id": "0",
         "line_number": 31,
         "raw_data": null,
-        "web_component": null
+        "web_component": null,
+        "device": null
       }
     ],
     "text": {
@@ -1204,7 +633,8 @@
     "data_id": "",
     "line_number": 0,
     "raw_data": null,
-    "web_component": null
+    "web_component": null,
+    "device": null
   },
   "html_data": {
     "title": {
@@ -1214,6 +644,12 @@
       "default": null
     },
     "og_title": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
+    "twitter_title": {
       "value": null,
       "properties": [],
       "line_number": null,
@@ -1231,7 +667,19 @@
       "line_number": null,
       "default": null
     },
+    "twitter_description": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
     "og_image": {
+      "value": null,
+      "properties": [],
+      "line_number": null,
+      "default": null
+    },
+    "twitter_image": {
       "value": null,
       "properties": [],
       "line_number": null,
@@ -1245,244 +693,6 @@
     }
   },
   "bag": {
-    "foo#print-toc-item": {
-      "Component": {
-        "name": "foo#print-toc-item",
-        "arguments": [
-          {
-            "name": "item",
-            "kind": {
-              "kind": {
-                "Record": {
-                  "name": "foo#toc-item"
-                }
-              },
-              "caption": false,
-              "body": false
-            },
-            "mutable": false,
-            "value": null,
-            "line_number": 29
-          }
-        ],
-        "definition": {
-          "name": "ftd#column",
-          "properties": [
-            {
-              "value": {
-                "Value": {
-                  "value": {
-                    "OrType": {
-                      "name": "ftd#length",
-                      "variant": "ftd#length.px",
-                      "full_variant": "ftd#length.px",
-                      "value": {
-                        "Value": {
-                          "value": {
-                            "Integer": {
-                              "value": 30
-                            }
-                          },
-                          "is_mutable": false,
-                          "line_number": 32
-                        }
-                      }
-                    }
-                  },
-                  "is_mutable": false,
-                  "line_number": 32
-                }
-              },
-              "source": {
-                "Header": {
-                  "name": "padding",
-                  "mutable": false
-                }
-              },
-              "condition": null,
-              "line_number": 32
-            },
-            {
-              "value": {
-                "Value": {
-                  "value": {
-                    "List": {
-                      "data": [
-                        {
-                          "Value": {
-                            "value": {
-                              "UI": {
-                                "name": "ftd#text",
-                                "kind": {
-                                  "kind": {
-                                    "UI": {
-                                      "name": null,
-                                      "subsection_source": true,
-                                      "is_web_component": false
-                                    }
-                                  },
-                                  "caption": false,
-                                  "body": false
-                                },
-                                "component": {
-                                  "name": "ftd#text",
-                                  "properties": [
-                                    {
-                                      "value": {
-                                        "Reference": {
-                                          "name": "foo#print-toc-item.item.name",
-                                          "kind": {
-                                            "kind": "String",
-                                            "caption": true,
-                                            "body": true
-                                          },
-                                          "source": {
-                                            "Local": "print-toc-item"
-                                          },
-                                          "is_mutable": false,
-                                          "line_number": 34
-                                        }
-                                      },
-                                      "source": "Caption",
-                                      "condition": null,
-                                      "line_number": 34
-                                    }
-                                  ],
-                                  "iteration": null,
-                                  "condition": null,
-                                  "events": [],
-                                  "children": [],
-                                  "source": "Declaration",
-                                  "line_number": 34
-                                }
-                              }
-                            },
-                            "is_mutable": false,
-                            "line_number": 34
-                          }
-                        },
-                        {
-                          "Value": {
-                            "value": {
-                              "UI": {
-                                "name": "foo#print-toc-item",
-                                "kind": {
-                                  "kind": {
-                                    "UI": {
-                                      "name": null,
-                                      "subsection_source": true,
-                                      "is_web_component": false
-                                    }
-                                  },
-                                  "caption": false,
-                                  "body": false
-                                },
-                                "component": {
-                                  "name": "foo#print-toc-item",
-                                  "properties": [
-                                    {
-                                      "value": {
-                                        "Reference": {
-                                          "name": "foo#obj",
-                                          "kind": {
-                                            "kind": {
-                                              "Record": {
-                                                "name": "foo#toc-item"
-                                              }
-                                            },
-                                            "caption": false,
-                                            "body": false
-                                          },
-                                          "source": {
-                                            "Loop": "foo#obj"
-                                          },
-                                          "is_mutable": false,
-                                          "line_number": 37
-                                        }
-                                      },
-                                      "source": {
-                                        "Header": {
-                                          "name": "item",
-                                          "mutable": false
-                                        }
-                                      },
-                                      "condition": null,
-                                      "line_number": 37
-                                    }
-                                  ],
-                                  "iteration": {
-                                    "on": {
-                                      "Reference": {
-                                        "name": "foo#print-toc-item.item.children",
-                                        "kind": {
-                                          "kind": {
-                                            "List": {
-                                              "kind": {
-                                                "Record": {
-                                                  "name": "foo#toc-item"
-                                                }
-                                              }
-                                            }
-                                          },
-                                          "caption": false,
-                                          "body": false
-                                        },
-                                        "source": {
-                                          "Local": "print-toc-item"
-                                        },
-                                        "is_mutable": false,
-                                        "line_number": 38
-                                      }
-                                    },
-                                    "alias": "foo#obj",
-                                    "line_number": 38
-                                  },
-                                  "condition": null,
-                                  "events": [],
-                                  "children": [],
-                                  "source": "Declaration",
-                                  "line_number": 36
-                                }
-                              }
-                            },
-                            "is_mutable": false,
-                            "line_number": 36
-                          }
-                        }
-                      ],
-                      "kind": {
-                        "kind": {
-                          "UI": {
-                            "name": null,
-                            "subsection_source": true,
-                            "is_web_component": false
-                          }
-                        },
-                        "caption": false,
-                        "body": false
-                      }
-                    }
-                  },
-                  "is_mutable": false,
-                  "line_number": 34
-                }
-              },
-              "source": "Subsection",
-              "condition": null,
-              "line_number": 34
-            }
-          ],
-          "iteration": null,
-          "condition": null,
-          "events": [],
-          "children": [],
-          "source": "Declaration",
-          "line_number": 31
-        },
-        "css": null,
-        "line_number": 28
-      }
-    },
     "foo#toc": {
       "Variable": {
         "name": "foo#toc",
@@ -1679,6 +889,246 @@
         "is_static": true
       }
     },
+    "foo#print-toc-item": {
+      "Component": {
+        "name": "foo#print-toc-item",
+        "arguments": [
+          {
+            "name": "item",
+            "kind": {
+              "kind": {
+                "Record": {
+                  "name": "foo#toc-item"
+                }
+              },
+              "caption": false,
+              "body": false
+            },
+            "mutable": false,
+            "value": null,
+            "line_number": 29,
+            "access_modifier": "Public"
+          }
+        ],
+        "definition": {
+          "name": "ftd#column",
+          "properties": [
+            {
+              "value": {
+                "Value": {
+                  "value": {
+                    "OrType": {
+                      "name": "ftd#length",
+                      "variant": "ftd#length.px",
+                      "full_variant": "ftd#length.px",
+                      "value": {
+                        "Value": {
+                          "value": {
+                            "Integer": {
+                              "value": 30
+                            }
+                          },
+                          "is_mutable": false,
+                          "line_number": 32
+                        }
+                      }
+                    }
+                  },
+                  "is_mutable": false,
+                  "line_number": 32
+                }
+              },
+              "source": {
+                "Header": {
+                  "name": "padding",
+                  "mutable": false
+                }
+              },
+              "condition": null,
+              "line_number": 32
+            },
+            {
+              "value": {
+                "Value": {
+                  "value": {
+                    "List": {
+                      "data": [
+                        {
+                          "Value": {
+                            "value": {
+                              "UI": {
+                                "name": "ftd#text",
+                                "kind": {
+                                  "kind": {
+                                    "UI": {
+                                      "name": null,
+                                      "subsection_source": true,
+                                      "is_web_component": false
+                                    }
+                                  },
+                                  "caption": false,
+                                  "body": false
+                                },
+                                "component": {
+                                  "name": "ftd#text",
+                                  "properties": [
+                                    {
+                                      "value": {
+                                        "Reference": {
+                                          "name": "foo#print-toc-item.item.name",
+                                          "kind": {
+                                            "kind": "String",
+                                            "caption": true,
+                                            "body": true
+                                          },
+                                          "source": {
+                                            "Local": "print-toc-item"
+                                          },
+                                          "is_mutable": false,
+                                          "line_number": 34
+                                        }
+                                      },
+                                      "source": "Caption",
+                                      "condition": null,
+                                      "line_number": 34
+                                    }
+                                  ],
+                                  "iteration": null,
+                                  "condition": null,
+                                  "events": [],
+                                  "children": [],
+                                  "source": "Declaration",
+                                  "line_number": 34
+                                }
+                              }
+                            },
+                            "is_mutable": false,
+                            "line_number": 34
+                          }
+                        },
+                        {
+                          "Value": {
+                            "value": {
+                              "UI": {
+                                "name": "foo#print-toc-item",
+                                "kind": {
+                                  "kind": {
+                                    "UI": {
+                                      "name": null,
+                                      "subsection_source": true,
+                                      "is_web_component": false
+                                    }
+                                  },
+                                  "caption": false,
+                                  "body": false
+                                },
+                                "component": {
+                                  "name": "foo#print-toc-item",
+                                  "properties": [
+                                    {
+                                      "value": {
+                                        "Reference": {
+                                          "name": "foo#obj",
+                                          "kind": {
+                                            "kind": {
+                                              "Record": {
+                                                "name": "foo#toc-item"
+                                              }
+                                            },
+                                            "caption": false,
+                                            "body": false
+                                          },
+                                          "source": {
+                                            "Loop": "foo#obj"
+                                          },
+                                          "is_mutable": false,
+                                          "line_number": 37
+                                        }
+                                      },
+                                      "source": {
+                                        "Header": {
+                                          "name": "item",
+                                          "mutable": false
+                                        }
+                                      },
+                                      "condition": null,
+                                      "line_number": 37
+                                    }
+                                  ],
+                                  "iteration": {
+                                    "on": {
+                                      "Reference": {
+                                        "name": "foo#print-toc-item.item.children",
+                                        "kind": {
+                                          "kind": {
+                                            "List": {
+                                              "kind": {
+                                                "Record": {
+                                                  "name": "foo#toc-item"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "caption": false,
+                                          "body": false
+                                        },
+                                        "source": {
+                                          "Local": "print-toc-item"
+                                        },
+                                        "is_mutable": false,
+                                        "line_number": 38
+                                      }
+                                    },
+                                    "alias": "foo#obj",
+                                    "loop_counter_alias": null,
+                                    "line_number": 38
+                                  },
+                                  "condition": null,
+                                  "events": [],
+                                  "children": [],
+                                  "source": "Declaration",
+                                  "line_number": 36
+                                }
+                              }
+                            },
+                            "is_mutable": false,
+                            "line_number": 36
+                          }
+                        }
+                      ],
+                      "kind": {
+                        "kind": {
+                          "UI": {
+                            "name": null,
+                            "subsection_source": true,
+                            "is_web_component": false
+                          }
+                        },
+                        "caption": false,
+                        "body": false
+                      }
+                    }
+                  },
+                  "is_mutable": false,
+                  "line_number": 34
+                }
+              },
+              "source": "Subsection",
+              "condition": null,
+              "line_number": 34
+            }
+          ],
+          "iteration": null,
+          "condition": null,
+          "events": [],
+          "children": [],
+          "source": "Declaration",
+          "line_number": 31
+        },
+        "css": null,
+        "line_number": 28
+      }
+    },
     "foo#toc-item": {
       "Record": {
         "name": "foo#toc-item",
@@ -1692,7 +1142,8 @@
             },
             "mutable": false,
             "value": null,
-            "line_number": 2
+            "line_number": 2,
+            "access_modifier": "Public"
           },
           {
             "name": "children",
@@ -1730,7 +1181,8 @@
                 "line_number": 3
               }
             },
-            "line_number": 3
+            "line_number": 3,
+            "access_modifier": "Public"
           }
         ],
         "line_number": 1
@@ -1746,5 +1198,6 @@
   },
   "raw_nodes": {},
   "js": [],
-  "css": []
+  "css": [],
+  "rive_data": []
 }

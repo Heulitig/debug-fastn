@@ -1,6 +1,6 @@
 [
   {
-    "Record": {
+    "record": {
       "name": "person",
       "fields": [
         {
@@ -11,7 +11,8 @@
           },
           "mutable": false,
           "value": null,
-          "line_number": 2
+          "line_number": 2,
+          "access_modifier": "Public"
         },
         {
           "name": "age",
@@ -21,7 +22,8 @@
           },
           "mutable": false,
           "value": null,
-          "line_number": 3
+          "line_number": 3,
+          "access_modifier": "Public"
         }
       ],
       "line_number": 1
@@ -38,9 +40,9 @@
       "value": {
         "List": {
           "value": [
-            [
-              "person",
-              {
+            {
+              "key": "person",
+              "value": {
                 "Record": {
                   "name": "person",
                   "caption": null,
@@ -49,13 +51,13 @@
                       "key": "name",
                       "mutable": false,
                       "value": {
-                        "String": {
+                        "string-value": {
                           "value": "Arpita",
-                          "line_number": 8,
+                          "line-number": 8,
                           "source": "Default"
                         }
                       },
-                      "line_number": 8,
+                      "line-number": 8,
                       "kind": null,
                       "condition": null
                     },
@@ -63,13 +65,13 @@
                       "key": "age",
                       "mutable": false,
                       "value": {
-                        "String": {
+                        "string-value": {
                           "value": "10",
-                          "line_number": 9,
+                          "line-number": 9,
                           "source": "Default"
                         }
                       },
-                      "line_number": 9,
+                      "line-number": 9,
                       "kind": null,
                       "condition": null
                     }
@@ -79,7 +81,7 @@
                   "line_number": 7
                 }
               }
-            ]
+            }
           ],
           "line_number": 5
         }
@@ -97,9 +99,9 @@
       "value": {
         "List": {
           "value": [
-            [
-              "person",
-              {
+            {
+              "key": "person",
+              "value": {
                 "Record": {
                   "name": "person",
                   "caption": null,
@@ -108,13 +110,13 @@
                       "key": "name",
                       "mutable": false,
                       "value": {
-                        "String": {
+                        "string-value": {
                           "value": "Ayushi",
-                          "line_number": 17,
+                          "line-number": 17,
                           "source": "Default"
                         }
                       },
-                      "line_number": 17,
+                      "line-number": 17,
                       "kind": null,
                       "condition": null
                     },
@@ -122,13 +124,13 @@
                       "key": "age",
                       "mutable": false,
                       "value": {
-                        "String": {
+                        "string-value": {
                           "value": "9",
-                          "line_number": 18,
+                          "line-number": 18,
                           "source": "Default"
                         }
                       },
-                      "line_number": 18,
+                      "line-number": 18,
                       "kind": null,
                       "condition": null
                     }
@@ -138,7 +140,7 @@
                   "line_number": 16
                 }
               }
-            ]
+            }
           ],
           "line_number": 14
         }

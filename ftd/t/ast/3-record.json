@@ -1,6 +1,6 @@
 [
   {
-    "Record": {
+    "record": {
       "name": "foo",
       "fields": [
         {
@@ -11,7 +11,8 @@
           },
           "mutable": false,
           "value": null,
-          "line_number": 2
+          "line_number": 2,
+          "access_modifier": "Public"
         },
         {
           "name": "age",
@@ -21,13 +22,14 @@
           },
           "mutable": false,
           "value": {
-            "String": {
+            "string-value": {
               "value": "40",
-              "line_number": 3,
+              "line-number": 3,
               "source": "Default"
             }
           },
-          "line_number": 3
+          "line_number": 3,
+          "access_modifier": "Public"
         }
       ],
       "line_number": 1

@@ -17,10 +17,12 @@ mod web_component;
 pub use component::{
     Argument, Component, ComponentDefinition, Event, Loop, Property, PropertySource,
 };
+pub use constants::ALWAYS_INCLUDE;
 pub use function::Function;
-pub use import::Import;
+pub use import::{Export, Exposing, Import};
 pub use kind::{
-    Condition, HeaderValues, ValueSource, VariableKind, VariableModifier, VariableValue, NULL,
+    BodyValue, Condition, HeaderValues, ValueSource, VariableKind, VariableModifier, VariableValue,
+    NULL,
 };
 pub use main::AST;
 pub use or_type::{OrType, OrTypeVariant};
@@ -31,7 +33,7 @@ pub use web_component::WebComponentDefinition;
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("P1Error: {}", _0)]
-    P1(#[from] ftd::p11::Error),
+    P1(#[from] ftd::p1::Error),
 
     #[error("ASTParseError: {doc_id}:{line_number} -> {message}")]
     Parse {

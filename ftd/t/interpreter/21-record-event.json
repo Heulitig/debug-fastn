@@ -18,7 +18,8 @@
             },
             "mutable": true,
             "value": null,
-            "line_number": 34
+            "line_number": 34,
+            "access_modifier": "Public"
           },
           {
             "name": "b",
@@ -29,7 +30,8 @@
             },
             "mutable": false,
             "value": null,
-            "line_number": 35
+            "line_number": 35,
+            "access_modifier": "Public"
           }
         ],
         "expression": [
@@ -39,7 +41,8 @@
           }
         ],
         "js": null,
-        "line_number": 33
+        "line_number": 33,
+        "external_implementation": false
       }
     },
     "foo#arpita": {
@@ -142,55 +145,6 @@
         "is_static": false
       }
     },
-    "foo#full-name": {
-      "Record": {
-        "name": "foo#full-name",
-        "fields": [
-          {
-            "name": "first-name",
-            "kind": {
-              "kind": "String",
-              "caption": true,
-              "body": false
-            },
-            "mutable": false,
-            "value": null,
-            "line_number": 2
-          },
-          {
-            "name": "middle-name",
-            "kind": {
-              "kind": {
-                "Optional": {
-                  "kind": "String"
-                }
-              },
-              "caption": false,
-              "body": false
-            },
-            "mutable": false,
-            "value": null,
-            "line_number": 3
-          },
-          {
-            "name": "last-name",
-            "kind": {
-              "kind": {
-                "Optional": {
-                  "kind": "String"
-                }
-              },
-              "caption": false,
-              "body": false
-            },
-            "mutable": false,
-            "value": null,
-            "line_number": 4
-          }
-        ],
-        "line_number": 1
-      }
-    },
     "foo#name": {
       "Variable": {
         "name": "foo#name",
@@ -233,7 +187,8 @@
             },
             "mutable": false,
             "value": null,
-            "line_number": 8
+            "line_number": 8,
+            "access_modifier": "Public"
           },
           {
             "name": "age",
@@ -244,10 +199,63 @@
             },
             "mutable": false,
             "value": null,
-            "line_number": 9
+            "line_number": 9,
+            "access_modifier": "Public"
           }
         ],
         "line_number": 7
+      }
+    },
+    "foo#full-name": {
+      "Record": {
+        "name": "foo#full-name",
+        "fields": [
+          {
+            "name": "first-name",
+            "kind": {
+              "kind": "String",
+              "caption": true,
+              "body": false
+            },
+            "mutable": false,
+            "value": null,
+            "line_number": 2,
+            "access_modifier": "Public"
+          },
+          {
+            "name": "middle-name",
+            "kind": {
+              "kind": {
+                "Optional": {
+                  "kind": "String"
+                }
+              },
+              "caption": false,
+              "body": false
+            },
+            "mutable": false,
+            "value": null,
+            "line_number": 3,
+            "access_modifier": "Public"
+          },
+          {
+            "name": "last-name",
+            "kind": {
+              "kind": {
+                "Optional": {
+                  "kind": "String"
+                }
+              },
+              "caption": false,
+              "body": false
+            },
+            "mutable": false,
+            "value": null,
+            "line_number": 4,
+            "access_modifier": "Public"
+          }
+        ],
+        "line_number": 1
       }
     }
   },

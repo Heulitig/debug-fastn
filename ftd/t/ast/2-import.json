@@ -1,9 +1,11 @@
 [
   {
-    "Import": {
+    "import": {
       "module": "foo",
       "alias": "f",
-      "line_number": 1
+      "line-number": 1,
+      "exports": null,
+      "exposing": null
     }
   }
 ]

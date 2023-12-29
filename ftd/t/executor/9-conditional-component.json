@@ -5,29 +5,37 @@
     "inherited": "inherited"
   },
   "bag": {
-    "foo#flag": {
-      "Variable": {
-        "name": "foo#flag",
-        "kind": {
-          "kind": "Boolean",
+    "foo#toggle": {
+      "Function": {
+        "name": "foo#toggle",
+        "return_kind": {
+          "kind": "Void",
           "caption": false,
           "body": false
         },
-        "mutable": true,
-        "value": {
-          "Value": {
-            "value": {
-              "Boolean": {
-                "value": true
-              }
+        "arguments": [
+          {
+            "name": "a",
+            "kind": {
+              "kind": "Boolean",
+              "caption": false,
+              "body": false
             },
-            "is_mutable": true,
-            "line_number": 1
+            "mutable": true,
+            "value": null,
+            "line_number": 23,
+            "access_modifier": "Public"
           }
-        },
-        "conditional_value": [],
-        "line_number": 1,
-        "is_static": false
+        ],
+        "expression": [
+          {
+            "expression": "a = !a;",
+            "line_number": 29
+          }
+        ],
+        "js": null,
+        "line_number": 22,
+        "external_implementation": false
       }
     },
     "foo#foo": {
@@ -193,6 +201,31 @@
         "line_number": 5
       }
     },
+    "foo#flag": {
+      "Variable": {
+        "name": "foo#flag",
+        "kind": {
+          "kind": "Boolean",
+          "caption": false,
+          "body": false
+        },
+        "mutable": true,
+        "value": {
+          "Value": {
+            "value": {
+              "Boolean": {
+                "value": true
+              }
+            },
+            "is_mutable": true,
+            "line_number": 1
+          }
+        },
+        "conditional_value": [],
+        "line_number": 1,
+        "is_static": false
+      }
+    },
     "foo#increment": {
       "Function": {
         "name": "foo#increment",
@@ -211,7 +244,8 @@
             },
             "mutable": true,
             "value": null,
-            "line_number": 17
+            "line_number": 17,
+            "access_modifier": "Public"
           }
         ],
         "expression": [
@@ -221,7 +255,8 @@
           }
         ],
         "js": null,
-        "line_number": 16
+        "line_number": 16,
+        "external_implementation": false
       }
     },
     "foo#num": {
@@ -248,37 +283,6 @@
         "line_number": 3,
         "is_static": false
       }
-    },
-    "foo#toggle": {
-      "Function": {
-        "name": "foo#toggle",
-        "return_kind": {
-          "kind": "Void",
-          "caption": false,
-          "body": false
-        },
-        "arguments": [
-          {
-            "name": "a",
-            "kind": {
-              "kind": "Boolean",
-              "caption": false,
-              "body": false
-            },
-            "mutable": true,
-            "value": null,
-            "line_number": 23
-          }
-        ],
-        "expression": [
-          {
-            "expression": "a = !a;",
-            "line_number": 29
-          }
-        ],
-        "js": null,
-        "line_number": 22
-      }
     }
   },
   "main": {
@@ -289,7 +293,7 @@
         "properties": []
       },
       "align_content": {
-        "value": "TopLeft",
+        "value": null,
         "line_number": null,
         "properties": []
       },
@@ -638,9 +642,7 @@
                 "properties": []
               },
               "border_width": {
-                "value": {
-                  "Px": 0
-                },
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -715,12 +717,12 @@
                 "properties": []
               },
               "width": {
-                "value": "Auto",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
               "height": {
-                "value": "Auto",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -868,6 +870,11 @@
                 "line_number": null,
                 "properties": []
               },
+              "opacity": {
+                "value": null,
+                "line_number": null,
+                "properties": []
+              },
               "resize": {
                 "value": null,
                 "line_number": null,
@@ -927,16 +934,23 @@
                 "value": null,
                 "line_number": null,
                 "properties": []
-              }
+              },
+              "device": null
             },
             "style": {
+              "value": null,
+              "line_number": null,
+              "properties": []
+            },
+            "display": {
               "value": null,
               "line_number": null,
               "properties": []
             }
           }
         }
-      ]
+      ],
+      "device": null
     },
     "common": {
       "id": {
@@ -1068,9 +1082,7 @@
         "properties": []
       },
       "border_width": {
-        "value": {
-          "Px": 0
-        },
+        "value": null,
         "line_number": null,
         "properties": []
       },
@@ -1217,6 +1229,11 @@
         "line_number": null,
         "properties": []
       },
+      "opacity": {
+        "value": null,
+        "line_number": null,
+        "properties": []
+      },
       "resize": {
         "value": null,
         "line_number": null,
@@ -1276,7 +1293,8 @@
         "value": null,
         "line_number": null,
         "properties": []
-      }
+      },
+      "device": null
     }
   },
   "html_data": {
@@ -1286,6 +1304,11 @@
       "properties": []
     },
     "og_title": {
+      "value": null,
+      "line_number": null,
+      "properties": []
+    },
+    "twitter_title": {
       "value": null,
       "line_number": null,
       "properties": []
@@ -1300,7 +1323,17 @@
       "line_number": null,
       "properties": []
     },
+    "twitter_description": {
+      "value": null,
+      "line_number": null,
+      "properties": []
+    },
     "og_image": {
+      "value": null,
+      "line_number": null,
+      "properties": []
+    },
+    "twitter_image": {
       "value": null,
       "line_number": null,
       "properties": []
@@ -1316,5 +1349,6 @@
   },
   "element_constructor": {},
   "js": [],
-  "css": []
+  "css": [],
+  "rive_data": []
 }

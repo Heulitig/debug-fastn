@@ -1,0 +1,56 @@
+-- string name: Arpita
+
+-- integer $i: 9
+
+-- ftd.text: $name
+padding.px if { i > 10 }: 4
+margin.px: $i
+$on-click$: $increment($a = $i)
+
+-- foo: Foo says Hello
+$on-click$: $increment($a = $i)
+
+-- ftd.text: Hello
+if: { i > 11 }
+
+
+
+
+-- component foo:
+caption name-g: Hello
+
+-- ftd.column:
+-- ftd.text: $foo.name-g
+-- ftd.text: Foo 2
+-- end: ftd.column
+
+-- end: foo
+
+
+-- string list $names:
+
+-- ftd.text: Click me to add Tom
+$on-click$: $append-string($a = $names, v = Tom)
+
+-- ftd.text: $obj
+for: obj in $names
+
+-- ftd.text: End
+
+-- ftd.text: $obj
+for: obj in $names
+if: { LOOP.COUNTER % 2 == 0 }
+
+
+-- void append-string(a,v):
+string list $a:
+string v:
+
+ftd.append(a, v)
+
+
+
+-- void increment(a):
+integer $a:
+
+a = a + 1;

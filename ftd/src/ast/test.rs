@@ -2,7 +2,7 @@ use pretty_assertions::assert_eq; // macro
 
 #[track_caller]
 fn p(s: &str, t: &str, fix: bool, file_location: &std::path::PathBuf) {
-    let sections = ftd::p11::parse(s, "foo").unwrap_or_else(|e| panic!("{:?}", e));
+    let sections = ftd::p1::parse(s, "foo").unwrap_or_else(|e| panic!("{:?}", e));
     let ast = ftd::ast::AST::from_sections(sections.as_slice(), "foo")
         .unwrap_or_else(|e| panic!("{:?}", e));
     let expected_json = serde_json::to_string_pretty(&ast).unwrap();
@@ -17,7 +17,7 @@ fn p(s: &str, t: &str, fix: bool, file_location: &std::path::PathBuf) {
 
 /*#[track_caller]
 fn f(s: &str, m: &str) {
-    let sections = ftd::p11::parse(s, "foo").unwrap_or_else(|e| panic!("{:?}", e));
+    let sections = ftd::p1::parse(s, "foo").unwrap_or_else(|e| panic!("{:?}", e));
     let ast = ftd::ast::AST::from_sections(sections.as_slice(), "foo");
     match ast {
         Ok(r) => panic!("expected failure, found: {:?}", r),
@@ -49,7 +49,11 @@ fn ast_test_all() {
     let fix = cli_args.iter().any(|v| v.eq("fix=true"));
     let path = cli_args.iter().find_map(|v| v.strip_prefix("path="));
     for (files, json) in find_file_groups() {
-        let t = std::fs::read_to_string(&json).unwrap();
+        let t = if fix {
+            "".to_string()
+        } else {
+            std::fs::read_to_string(&json).unwrap()
+        };
         for f in files {
             match path {
                 Some(path) if !f.to_str().unwrap().contains(path) => continue,
@@ -62,31 +66,9 @@ fn ast_test_all() {
     }
 }
 
-fn find_all_files_matching_extension_recursively(
-    dir: impl AsRef<std::path::Path>,
-    extension: &str,
-) -> Vec<std::path::PathBuf> {
-    let mut files = vec![];
-    for entry in std::fs::read_dir(dir).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_dir() {
-            files.extend(find_all_files_matching_extension_recursively(
-                &path, extension,
-            ));
-        } else {
-            match path.extension() {
-                Some(ext) if ext == extension => files.push(path),
-                _ => continue,
-            }
-        }
-    }
-    files
-}
-
 fn find_file_groups() -> Vec<(Vec<std::path::PathBuf>, std::path::PathBuf)> {
     let files = {
-        let mut f = find_all_files_matching_extension_recursively("t/ast", "ftd");
+        let mut f = ftd::utils::find_all_files_matching_extension_recursively("t/ast", "ftd");
         f.sort();
         f
     };

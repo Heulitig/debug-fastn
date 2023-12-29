@@ -1,27 +1,39 @@
-pub fn process(
+/// currently returns the github user details
+pub async fn process(
     value: ftd::ast::VariableValue,
-    kind: ftd::interpreter2::Kind,
-    doc: &ftd::interpreter2::TDoc,
-    config: &fastn_core::Config,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Value> {
-    let mut found_cookie = false;
-    let is_login = match &config.request {
-        Some(req) => {
-            for auth_provider in fastn_core::auth::AuthProviders::AUTH_ITER.iter() {
-                if req.cookie(auth_provider.as_str()).is_some() {
-                    found_cookie = true;
+    kind: ftd::interpreter::Kind,
+    doc: &ftd::interpreter::TDoc<'_>,
+    req_config: &fastn_core::RequestConfig,
+) -> ftd::interpreter::Result<ftd::interpreter::Value> {
+    let mut ud = Default::default();
+
+    if let Some(session_id) = req_config.request.cookie(fastn_core::auth::COOKIE_NAME) {
+        if !session_id.is_empty() {
+            let session_id: i32 = session_id.parse().map_err(|e| {
+                ftd::interpreter::Error::OtherError(format!("Failed to parse id from string: {e}"))
+            })?;
+
+            if let Ok((user, email)) =
+                fastn_core::auth::get_authenticated_user_with_email(&session_id).await
+            {
+                ud = UserDetails {
+                    is_logged_in: true,
+                    username: user.username,
+                    name: user.name,
+                    email,
                 }
             }
-            found_cookie
         }
-        None => false,
-    };
-
-    #[derive(Debug, serde::Serialize)]
-    struct UserDetails {
-        #[serde(rename = "is-login")]
-        is_login: bool,
     }
-    let ud = UserDetails { is_login };
-    doc.from_json(&ud, &kind, value.line_number())
+
+    doc.from_json(&ud, &kind, &value)
+}
+
+#[derive(Debug, serde::Serialize, Default)]
+struct UserDetails {
+    #[serde(rename = "is-logged-in")]
+    is_logged_in: bool,
+    username: String,
+    name: String,
+    email: String,
 }

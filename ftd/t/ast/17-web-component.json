@@ -11,7 +11,8 @@
           },
           "mutable": false,
           "value": null,
-          "line_number": 2
+          "line_number": 2,
+          "access_modifier": "Public"
         },
         {
           "name": "start",
@@ -21,13 +22,14 @@
           },
           "mutable": false,
           "value": {
-            "String": {
+            "string-value": {
               "value": "0",
-              "line_number": 3,
+              "line-number": 3,
               "source": "Default"
             }
           },
-          "line_number": 3
+          "line_number": 3,
+          "access_modifier": "Public"
         },
         {
           "name": "count",
@@ -37,7 +39,8 @@
           },
           "mutable": true,
           "value": null,
-          "line_number": 4
+          "line_number": 4,
+          "access_modifier": "Public"
         },
         {
           "name": "separator",
@@ -47,58 +50,59 @@
           },
           "mutable": false,
           "value": {
-            "String": {
+            "string-value": {
               "value": ",",
-              "line_number": 5,
+              "line-number": 5,
               "source": "Default"
             }
           },
-          "line_number": 5
+          "line_number": 5,
+          "access_modifier": "Public"
         }
       ],
-      "js": "ftd/t/web_component.js",
+      "js": "ftd/ftd/t/assets/web_component.js",
       "line_number": 1
     }
   },
   {
-    "ComponentInvocation": {
+    "component-invocation": {
       "name": "word-count",
       "properties": [
         {
           "value": {
-            "String": {
+            "string-value": {
               "value": "0",
-              "line_number": 11,
+              "line-number": 11,
               "source": "Default"
             }
           },
           "source": {
-            "Header": {
+            "header": {
               "name": "count",
               "mutable": true
             }
           },
           "condition": null,
-          "line_number": 11
+          "line-number": 11
         },
         {
           "value": {
-            "String": {
+            "string-value": {
               "value": "This is the body.",
-              "line_number": 13,
+              "line-number": 13,
               "source": "Body"
             }
           },
           "source": "Body",
           "condition": null,
-          "line_number": 13
+          "line-number": 13
         }
       ],
       "iteration": null,
       "condition": null,
       "events": [],
       "children": [],
-      "line_number": 10
+      "line-number": 10
     }
   }
 ]

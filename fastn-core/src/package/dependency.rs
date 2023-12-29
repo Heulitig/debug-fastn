@@ -1,3 +1,5 @@
+use fastn_core::package::PackageTempIntoPackage;
+
 #[derive(Debug, Clone)]
 pub struct Dependency {
     pub package: fastn_core::Package,
@@ -7,6 +9,8 @@ pub struct Dependency {
     pub implements: Vec<String>,
     pub endpoint: Option<String>,
     pub mountpoint: Option<String>,
+    pub provided_via: Option<String>,
+    pub required_as: Option<String>,
 }
 
 impl Dependency {
@@ -32,6 +36,36 @@ impl Dependency {
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
+pub(crate) struct AutoImportTemp {
+    pub name: String,
+    pub exposing: Vec<String>,
+}
+
+impl AutoImportTemp {
+    pub(crate) fn into_auto_import(self) -> fastn_core::AutoImport {
+        let exposing = {
+            let mut exposing = vec![];
+            for item in self.exposing {
+                exposing.extend(item.split(',').map(|v| v.trim().to_string()));
+            }
+            exposing
+        };
+        match self.name.split_once(" as ") {
+            Some((package, alias)) => fastn_core::AutoImport {
+                path: package.trim().to_string(),
+                alias: Some(alias.trim().to_string()),
+                exposing,
+            },
+            None => fastn_core::AutoImport {
+                path: self.name.trim().to_string(),
+                alias: None,
+                exposing,
+            },
+        }
+    }
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
 pub(crate) struct DependencyTemp {
     pub name: String,
     pub version: Option<String>,
@@ -40,6 +74,10 @@ pub(crate) struct DependencyTemp {
     pub endpoint: Option<String>,
     #[serde(rename = "mount-point")]
     pub mountpoint: Option<String>,
+    #[serde(rename = "provided-via")]
+    pub provided_via: Option<String>,
+    #[serde(rename = "required-as")]
+    pub required_as: Option<String>,
 }
 
 impl DependencyTemp {
@@ -62,6 +100,8 @@ impl DependencyTemp {
                 }
                 None => None,
             },
+            provided_via: self.provided_via,
+            required_as: self.required_as,
         })
     }
 }
@@ -143,7 +183,7 @@ impl fastn_core::Package {
                     };
 
                 ftd_document
-                    .get::<fastn_core::package::PackageTemp>("fastn#package")?
+                    .get::<fastn_package::old_fastn::PackageTemp>("fastn#package")?
                     .into_package()
                     .zip
                     .ok_or(fastn_core::Error::UsageError {
@@ -463,7 +503,6 @@ impl fastn_core::Package {
     ///
     /// `process_fastn()`, together with `process()`, recursively make dependency packages available inside
     /// `.packages` directory
-    ///
     #[async_recursion::async_recursion(?Send)]
     async fn process_fastn(
         root: &camino::Utf8PathBuf,
@@ -487,7 +526,7 @@ impl fastn_core::Package {
             }
         };
         let mut package = {
-            let temp_package: fastn_core::package::PackageTemp =
+            let temp_package: fastn_package::old_fastn::PackageTemp =
                 ftd_document.get("fastn#package")?;
             temp_package.into_package()
         };
@@ -508,10 +547,10 @@ impl fastn_core::Package {
                 .collect::<fastn_core::Result<Vec<Dependency>>>()?
         };
 
-        let auto_imports: Vec<String> = ftd_document.get("fastn#auto-import")?;
+        let auto_imports: Vec<AutoImportTemp> = ftd_document.get("fastn#auto-import")?;
         let auto_import = auto_imports
-            .iter()
-            .map(|f| fastn_core::AutoImport::from_string(f.as_str()))
+            .into_iter()
+            .map(|f| f.into_auto_import())
             .collect();
         package.auto_import = auto_import;
         package.fonts = ftd_document.get("fastn#font")?;
@@ -606,7 +645,7 @@ impl fastn_core::Package {
             }
         };
         let mut package = {
-            let temp_package: fastn_core::package::PackageTemp =
+            let temp_package: fastn_package::old_fastn::PackageTemp =
                 ftd_document.get("fastn#package")?;
             temp_package.into_package()
         };
@@ -627,10 +666,10 @@ impl fastn_core::Package {
                 .collect::<fastn_core::Result<Vec<Dependency>>>()?
         };
 
-        let auto_imports: Vec<String> = ftd_document.get("fastn#auto-import")?;
+        let auto_imports: Vec<AutoImportTemp> = ftd_document.get("fastn#auto-import")?;
         let auto_import = auto_imports
-            .iter()
-            .map(|f| fastn_core::AutoImport::from_string(f.as_str()))
+            .into_iter()
+            .map(|f| f.into_auto_import())
             .collect();
         package.auto_import = auto_import;
         package.fonts = ftd_document.get("fastn#font")?;

@@ -5,6 +5,31 @@
     "inherited": "inherited"
   },
   "bag": {
+    "foo#print:name:1": {
+      "Variable": {
+        "name": "foo#print:name:1",
+        "kind": {
+          "kind": "String",
+          "caption": false,
+          "body": false
+        },
+        "mutable": false,
+        "value": {
+          "Value": {
+            "value": {
+              "String": {
+                "text": "Hello Again"
+              }
+            },
+            "is_mutable": false,
+            "line_number": 19
+          }
+        },
+        "conditional_value": [],
+        "line_number": 18,
+        "is_static": true
+      }
+    },
     "foo#name": {
       "Variable": {
         "name": "foo#name",
@@ -43,7 +68,8 @@
             },
             "mutable": false,
             "value": null,
-            "line_number": 4
+            "line_number": 4,
+            "access_modifier": "Public"
           }
         ],
         "definition": {
@@ -141,31 +167,6 @@
         "css": null,
         "line_number": 3
       }
-    },
-    "foo#print:name:1": {
-      "Variable": {
-        "name": "foo#print:name:1",
-        "kind": {
-          "kind": "String",
-          "caption": false,
-          "body": false
-        },
-        "mutable": false,
-        "value": {
-          "Value": {
-            "value": {
-              "String": {
-                "text": "Hello Again"
-              }
-            },
-            "is_mutable": false,
-            "line_number": 19
-          }
-        },
-        "conditional_value": [],
-        "line_number": 18,
-        "is_static": true
-      }
     }
   },
   "main": {
@@ -176,7 +177,7 @@
         "properties": []
       },
       "align_content": {
-        "value": "TopLeft",
+        "value": null,
         "line_number": null,
         "properties": []
       },
@@ -195,7 +196,7 @@
                 "properties": []
               },
               "align_content": {
-                "value": "TopLeft",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -381,9 +382,7 @@
                         "properties": []
                       },
                       "border_width": {
-                        "value": {
-                          "Px": 0
-                        },
+                        "value": null,
                         "line_number": null,
                         "properties": []
                       },
@@ -458,12 +457,12 @@
                         "properties": []
                       },
                       "width": {
-                        "value": "Auto",
+                        "value": null,
                         "line_number": null,
                         "properties": []
                       },
                       "height": {
-                        "value": "Auto",
+                        "value": null,
                         "line_number": null,
                         "properties": []
                       },
@@ -530,6 +529,11 @@
                         "line_number": null,
                         "properties": []
                       },
+                      "opacity": {
+                        "value": null,
+                        "line_number": null,
+                        "properties": []
+                      },
                       "resize": {
                         "value": null,
                         "line_number": null,
@@ -589,16 +593,23 @@
                         "value": null,
                         "line_number": null,
                         "properties": []
-                      }
+                      },
+                      "device": null
                     },
                     "style": {
+                      "value": null,
+                      "line_number": null,
+                      "properties": []
+                    },
+                    "display": {
                       "value": null,
                       "line_number": null,
                       "properties": []
                     }
                   }
                 }
-              ]
+              ],
+              "device": null
             },
             "common": {
               "id": {
@@ -730,9 +741,7 @@
                 "properties": []
               },
               "border_width": {
-                "value": {
-                  "Px": 0
-                },
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -807,12 +816,12 @@
                 "properties": []
               },
               "width": {
-                "value": "Auto",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
               "height": {
-                "value": "Auto",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -879,6 +888,11 @@
                 "line_number": null,
                 "properties": []
               },
+              "opacity": {
+                "value": null,
+                "line_number": null,
+                "properties": []
+              },
               "resize": {
                 "value": null,
                 "line_number": null,
@@ -938,7 +952,8 @@
                 "value": null,
                 "line_number": null,
                 "properties": []
-              }
+              },
+              "device": null
             }
           }
         },
@@ -951,7 +966,7 @@
                 "properties": []
               },
               "align_content": {
-                "value": "TopLeft",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -1137,9 +1152,7 @@
                         "properties": []
                       },
                       "border_width": {
-                        "value": {
-                          "Px": 0
-                        },
+                        "value": null,
                         "line_number": null,
                         "properties": []
                       },
@@ -1214,12 +1227,12 @@
                         "properties": []
                       },
                       "width": {
-                        "value": "Auto",
+                        "value": null,
                         "line_number": null,
                         "properties": []
                       },
                       "height": {
-                        "value": "Auto",
+                        "value": null,
                         "line_number": null,
                         "properties": []
                       },
@@ -1286,6 +1299,11 @@
                         "line_number": null,
                         "properties": []
                       },
+                      "opacity": {
+                        "value": null,
+                        "line_number": null,
+                        "properties": []
+                      },
                       "resize": {
                         "value": null,
                         "line_number": null,
@@ -1345,16 +1363,23 @@
                         "value": null,
                         "line_number": null,
                         "properties": []
-                      }
+                      },
+                      "device": null
                     },
                     "style": {
+                      "value": null,
+                      "line_number": null,
+                      "properties": []
+                    },
+                    "display": {
                       "value": null,
                       "line_number": null,
                       "properties": []
                     }
                   }
                 }
-              ]
+              ],
+              "device": null
             },
             "common": {
               "id": {
@@ -1486,9 +1511,7 @@
                 "properties": []
               },
               "border_width": {
-                "value": {
-                  "Px": 0
-                },
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -1563,12 +1586,12 @@
                 "properties": []
               },
               "width": {
-                "value": "Auto",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
               "height": {
-                "value": "Auto",
+                "value": null,
                 "line_number": null,
                 "properties": []
               },
@@ -1635,6 +1658,11 @@
                 "line_number": null,
                 "properties": []
               },
+              "opacity": {
+                "value": null,
+                "line_number": null,
+                "properties": []
+              },
               "resize": {
                 "value": null,
                 "line_number": null,
@@ -1694,11 +1722,13 @@
                 "value": null,
                 "line_number": null,
                 "properties": []
-              }
+              },
+              "device": null
             }
           }
         }
-      ]
+      ],
+      "device": null
     },
     "common": {
       "id": {
@@ -1830,9 +1860,7 @@
         "properties": []
       },
       "border_width": {
-        "value": {
-          "Px": 0
-        },
+        "value": null,
         "line_number": null,
         "properties": []
       },
@@ -1979,6 +2007,11 @@
         "line_number": null,
         "properties": []
       },
+      "opacity": {
+        "value": null,
+        "line_number": null,
+        "properties": []
+      },
       "resize": {
         "value": null,
         "line_number": null,
@@ -2038,7 +2071,8 @@
         "value": null,
         "line_number": null,
         "properties": []
-      }
+      },
+      "device": null
     }
   },
   "html_data": {
@@ -2048,6 +2082,11 @@
       "properties": []
     },
     "og_title": {
+      "value": null,
+      "line_number": null,
+      "properties": []
+    },
+    "twitter_title": {
       "value": null,
       "line_number": null,
       "properties": []
@@ -2062,7 +2101,17 @@
       "line_number": null,
       "properties": []
     },
+    "twitter_description": {
+      "value": null,
+      "line_number": null,
+      "properties": []
+    },
     "og_image": {
+      "value": null,
+      "line_number": null,
+      "properties": []
+    },
+    "twitter_image": {
       "value": null,
       "line_number": null,
       "properties": []
@@ -2078,5 +2127,6 @@
   },
   "element_constructor": {},
   "js": [],
-  "css": []
+  "css": [],
+  "rive_data": []
 }

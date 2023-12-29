@@ -28,14 +28,15 @@ pub struct Sitemap {
 }
 
 #[derive(Debug, Default, serde::Serialize)]
-pub struct SiteMapCompat {
+pub struct SitemapCompat {
     pub sections: Vec<toc::TocItemCompat>,
-    pub subsections: Vec<toc::TocItemCompat>,
+    #[serde(rename = "subsections")]
+    pub sub_sections: Vec<toc::TocItemCompat>,
     pub toc: Vec<toc::TocItemCompat>,
     #[serde(rename = "current-section")]
     pub current_section: Option<toc::TocItemCompat>,
     #[serde(rename = "current-subsection")]
-    pub current_subsection: Option<toc::TocItemCompat>,
+    pub current_sub_section: Option<toc::TocItemCompat>,
     #[serde(rename = "current-page")]
     pub current_page: Option<toc::TocItemCompat>,
     pub readers: Vec<String>,
@@ -45,7 +46,7 @@ pub struct SiteMapCompat {
 #[derive(Debug, Clone)]
 pub enum SitemapElement {
     Section(section::Section),
-    Subsection(section::Subsection),
+    SubSection(section::Subsection),
     TocItem(toc::TocItem),
 }
 
@@ -84,7 +85,7 @@ impl SitemapElement {
     pub(crate) fn insert_key_value(&mut self, key: &str, value: &str) {
         let element_title = match self {
             SitemapElement::Section(s) => &mut s.extra_data,
-            SitemapElement::Subsection(s) => &mut s.extra_data,
+            SitemapElement::SubSection(s) => &mut s.extra_data,
             SitemapElement::TocItem(s) => &mut s.extra_data,
         };
         element_title.insert(key.to_string(), value.trim().to_string());
@@ -93,7 +94,7 @@ impl SitemapElement {
     pub(crate) fn set_title(&mut self, title: Option<String>) {
         let element_title = match self {
             SitemapElement::Section(s) => &mut s.title,
-            SitemapElement::Subsection(s) => &mut s.title,
+            SitemapElement::SubSection(s) => &mut s.title,
             SitemapElement::TocItem(s) => &mut s.title,
         };
         *element_title = title;
@@ -102,7 +103,7 @@ impl SitemapElement {
     pub(crate) fn set_icon(&mut self, path: Option<String>) {
         let element_icon = match self {
             SitemapElement::Section(s) => &mut s.icon,
-            SitemapElement::Subsection(s) => &mut s.icon,
+            SitemapElement::SubSection(s) => &mut s.icon,
             SitemapElement::TocItem(s) => &mut s.icon,
         };
         *element_icon = path;
@@ -111,7 +112,7 @@ impl SitemapElement {
     pub(crate) fn set_bury(&mut self, value: bool) {
         let element_bury = match self {
             SitemapElement::Section(s) => &mut s.bury,
-            SitemapElement::Subsection(s) => &mut s.bury,
+            SitemapElement::SubSection(s) => &mut s.bury,
             SitemapElement::TocItem(s) => &mut s.bury,
         };
         *element_bury = value;
@@ -127,7 +128,7 @@ impl SitemapElement {
             SitemapElement::Section(s) => {
                 s.id = id;
             }
-            SitemapElement::Subsection(s) => {
+            SitemapElement::SubSection(s) => {
                 s.id = Some(id);
             }
             SitemapElement::TocItem(s) => {
@@ -139,7 +140,7 @@ impl SitemapElement {
     pub(crate) fn set_nav_title(&mut self, nav_title: Option<String>) {
         let nav = match self {
             SitemapElement::Section(s) => &mut s.nav_title,
-            SitemapElement::Subsection(s) => &mut s.nav_title,
+            SitemapElement::SubSection(s) => &mut s.nav_title,
             SitemapElement::TocItem(s) => &mut s.nav_title,
         };
         *nav = nav_title;
@@ -148,7 +149,7 @@ impl SitemapElement {
     pub(crate) fn set_skip(&mut self, flag: bool) {
         let skip = match self {
             SitemapElement::Section(s) => &mut s.skip,
-            SitemapElement::Subsection(s) => &mut s.skip,
+            SitemapElement::SubSection(s) => &mut s.skip,
             SitemapElement::TocItem(s) => &mut s.skip,
         };
         *skip = flag;
@@ -157,7 +158,7 @@ impl SitemapElement {
     pub(crate) fn set_confidential(&mut self, flag: bool) {
         let skip = match self {
             SitemapElement::Section(s) => &mut s.confidential,
-            SitemapElement::Subsection(s) => &mut s.confidential,
+            SitemapElement::SubSection(s) => &mut s.confidential,
             SitemapElement::TocItem(s) => &mut s.confidential,
         };
         *skip = flag;
@@ -166,7 +167,7 @@ impl SitemapElement {
     pub(crate) fn set_readers(&mut self, group: &str) {
         let readers = match self {
             SitemapElement::Section(s) => &mut s.readers,
-            SitemapElement::Subsection(s) => &mut s.readers,
+            SitemapElement::SubSection(s) => &mut s.readers,
             SitemapElement::TocItem(s) => &mut s.readers,
         };
         readers.push(group.to_string());
@@ -175,7 +176,7 @@ impl SitemapElement {
     pub(crate) fn set_writers(&mut self, group: &str) {
         let writers = match self {
             SitemapElement::Section(s) => &mut s.writers,
-            SitemapElement::Subsection(s) => &mut s.writers,
+            SitemapElement::SubSection(s) => &mut s.writers,
             SitemapElement::TocItem(s) => &mut s.writers,
         };
         writers.push(group.to_string());
@@ -184,7 +185,7 @@ impl SitemapElement {
     pub(crate) fn set_document(&mut self, doc: &str) {
         let document = match self {
             SitemapElement::Section(s) => &mut s.document,
-            SitemapElement::Subsection(s) => &mut s.document,
+            SitemapElement::SubSection(s) => &mut s.document,
             SitemapElement::TocItem(s) => &mut s.document,
         };
         *document = Some(doc.to_string());
@@ -193,7 +194,7 @@ impl SitemapElement {
     pub(crate) fn get_title(&self) -> Option<String> {
         match self {
             SitemapElement::Section(s) => &s.title,
-            SitemapElement::Subsection(s) => &s.title,
+            SitemapElement::SubSection(s) => &s.title,
             SitemapElement::TocItem(s) => &s.title,
         }
         .clone()
@@ -202,7 +203,7 @@ impl SitemapElement {
     pub(crate) fn get_id(&self) -> Option<String> {
         match self {
             SitemapElement::Section(s) => Some(s.id.clone()),
-            SitemapElement::Subsection(s) => s.id.clone(),
+            SitemapElement::SubSection(s) => s.id.clone(),
             SitemapElement::TocItem(s) => Some(s.id.clone()),
         }
     }
@@ -221,7 +222,7 @@ impl SitemapElement {
             SitemapElement::Section(s) => {
                 s.path_parameters = params;
             }
-            SitemapElement::Subsection(s) => {
+            SitemapElement::SubSection(s) => {
                 s.path_parameters = params;
             }
             SitemapElement::TocItem(t) => {
@@ -329,7 +330,7 @@ impl SitemapParser {
                         if !ParsingState::ParsingSection.eq(&self.state) {
                             return Err(ParseError::InvalidTOCItem {
                                 doc_id: self.doc_name.clone(),
-                                message: "Ambiguous <title>: <URL> evaluation. Subsection is called before subsection".to_string(),
+                                message: "Ambiguous <title>: <URL> evaluation. SubSection is called before subsection".to_string(),
                                 row_content: rest.as_str().to_string(),
                             });
                         }
@@ -362,7 +363,7 @@ impl SitemapParser {
                 id: rest.as_str().trim().to_string(),
                 ..Default::default()
             }),
-            ParsingState::ParsingSubsection => SitemapElement::Subsection(section::Subsection {
+            ParsingState::ParsingSubsection => SitemapElement::SubSection(section::Subsection {
                 id: Some(rest.as_str().trim().to_string()),
                 ..Default::default()
             }),
@@ -550,7 +551,7 @@ impl Sitemap {
     pub async fn parse(
         s: &str,
         package: &fastn_core::Package,
-        config: &mut fastn_core::Config,
+        config: &fastn_core::Config,
         resolve_sitemap: bool,
     ) -> Result<Self, ParseError> {
         let mut parser = SitemapParser {
@@ -595,7 +596,7 @@ impl Sitemap {
     async fn resolve(
         &mut self,
         package: &fastn_core::Package,
-        config: &mut fastn_core::Config,
+        config: &fastn_core::Config,
     ) -> fastn_core::Result<()> {
         let package_root = config.get_root_for_package(package);
         let current_package_root = config.root.to_owned();
@@ -608,7 +609,7 @@ impl Sitemap {
             section: &mut section::Section,
             package_root: &camino::Utf8PathBuf,
             current_package_root: &camino::Utf8PathBuf,
-            config: &mut fastn_core::Config,
+            config: &fastn_core::Config,
         ) -> fastn_core::Result<()> {
             let (file_location, translation_file_location) = if let Ok(file_name) = config
                 .get_file_path_and_resolve(
@@ -677,7 +678,7 @@ impl Sitemap {
             subsection: &mut section::Subsection,
             package_root: &camino::Utf8PathBuf,
             current_package_root: &camino::Utf8PathBuf,
-            config: &mut fastn_core::Config,
+            config: &fastn_core::Config,
         ) -> fastn_core::Result<()> {
             if let Some(ref id) = subsection.get_file_id() {
                 let (file_location, translation_file_location) = if let Ok(file_name) = config
@@ -737,7 +738,7 @@ impl Sitemap {
             toc: &mut toc::TocItem,
             package_root: &camino::Utf8PathBuf,
             current_package_root: &camino::Utf8PathBuf,
-            config: &mut fastn_core::Config,
+            config: &fastn_core::Config,
         ) -> fastn_core::Result<()> {
             let (file_location, translation_file_location) = if let Ok(file_name) = config
                 .get_file_path_and_resolve(
@@ -892,7 +893,7 @@ impl Sitemap {
         }
     }
 
-    pub(crate) fn get_sitemap_by_id(&self, id: &str) -> Option<SiteMapCompat> {
+    pub(crate) fn get_sitemap_by_id(&self, id: &str) -> Option<SitemapCompat> {
         use itertools::Itertools;
 
         let mut sections = vec![];
@@ -925,7 +926,7 @@ impl Sitemap {
                             .map(|v| fastn_core::utils::ids_matches(v, id))
                             .unwrap_or(false);
                         let toc = toc::TocItemCompat::new(
-                            v.id.clone(),
+                            v.id.as_ref().and_then(|v| get_url(v.as_str())),
                             v.title.clone(),
                             active,
                             active,
@@ -1034,12 +1035,12 @@ impl Sitemap {
                     )
                 }),
         );
-        return Some(SiteMapCompat {
+        return Some(SitemapCompat {
             sections,
-            subsections,
+            sub_sections: subsections,
             toc,
             current_section,
-            current_subsection,
+            current_sub_section: current_subsection,
             current_page,
             readers: self.readers.clone(),
             writers: self.writers.clone(),
@@ -1237,63 +1238,6 @@ impl Sitemap {
                 return Some(id.to_string());
             }
             Some(format!("{}/", id))
-        }
-    }
-
-    pub(crate) fn get_extra_data_by_id(
-        &self,
-        id: &str,
-    ) -> Option<std::collections::BTreeMap<String, String>> {
-        for section in self.sections.iter() {
-            if fastn_core::utils::ids_matches(section.id.as_str(), id) {
-                return Some(section.extra_data.to_owned());
-            }
-            if let Some(data) = get_extra_data_from_subsections(id, section.subsections.as_slice())
-            {
-                let mut all_data = section.extra_data.clone();
-                all_data.extend(data);
-                return Some(all_data);
-            }
-        }
-        return None;
-
-        fn get_extra_data_from_subsections(
-            id: &str,
-            subsections: &[section::Subsection],
-        ) -> Option<std::collections::BTreeMap<String, String>> {
-            for subsection in subsections {
-                if subsection.visible
-                    && fastn_core::utils::ids_matches(
-                        subsection.id.as_ref().unwrap_or(&"".to_string()),
-                        id,
-                    )
-                {
-                    return Some(subsection.extra_data.to_owned());
-                }
-                if let Some(data) = get_extra_data_from_toc(id, subsection.toc.as_slice()) {
-                    let mut all_data = subsection.extra_data.clone();
-                    all_data.extend(data);
-                    return Some(all_data);
-                }
-            }
-            None
-        }
-
-        fn get_extra_data_from_toc(
-            id: &str,
-            toc: &[toc::TocItem],
-        ) -> Option<std::collections::BTreeMap<String, String>> {
-            for toc_item in toc {
-                if fastn_core::utils::ids_matches(toc_item.id.as_str(), id) {
-                    return Some(toc_item.extra_data.to_owned());
-                }
-                if let Some(data) = get_extra_data_from_toc(id, toc_item.children.as_slice()) {
-                    let mut all_data = toc_item.extra_data.clone();
-                    all_data.extend(data);
-                    return Some(all_data);
-                }
-            }
-            None
         }
     }
 
@@ -1504,11 +1448,17 @@ impl Sitemap {
     /// path: /
     /// This function can be used for if path exists in sitemap or not
     // #[tracing::instrument(name = "sitemap-resolve-document", skip_all)]
-    pub fn resolve_document(&self, path: &str) -> Option<String> {
+    pub fn resolve_document(
+        &self,
+        path: &str,
+    ) -> Option<(String, std::collections::BTreeMap<String, String>)> {
         // tracing::info!(path = path);
-        fn resolve_in_toc(toc: &toc::TocItem, path: &str) -> Option<String> {
+        fn resolve_in_toc(
+            toc: &toc::TocItem,
+            path: &str,
+        ) -> Option<(String, std::collections::BTreeMap<String, String>)> {
             if fastn_core::utils::ids_matches(toc.id.as_str(), path) {
-                return toc.document.clone();
+                return toc.document.clone().map(|v| (v, toc.extra_data.clone()));
             }
 
             for child in toc.children.iter() {
@@ -1520,10 +1470,16 @@ impl Sitemap {
             None
         }
 
-        fn resolve_in_sub_section(sub_section: &section::Subsection, path: &str) -> Option<String> {
+        fn resolve_in_sub_section(
+            sub_section: &section::Subsection,
+            path: &str,
+        ) -> Option<(String, std::collections::BTreeMap<String, String>)> {
             if let Some(id) = sub_section.id.as_ref() {
                 if fastn_core::utils::ids_matches(path, id.as_str()) {
-                    return sub_section.document.clone();
+                    return sub_section
+                        .document
+                        .clone()
+                        .map(|v| (v, sub_section.extra_data.clone()));
                 }
             }
 
@@ -1537,9 +1493,15 @@ impl Sitemap {
             None
         }
 
-        fn resolve_in_section(section: &section::Section, path: &str) -> Option<String> {
+        fn resolve_in_section(
+            section: &section::Section,
+            path: &str,
+        ) -> Option<(String, std::collections::BTreeMap<String, String>)> {
             if fastn_core::utils::ids_matches(section.id.as_str(), path) {
-                return section.document.clone();
+                return section
+                    .document
+                    .clone()
+                    .map(|v| (v, section.extra_data.clone()));
             }
 
             for subsection in section.subsections.iter() {
@@ -1606,7 +1568,7 @@ fn construct_tree_util(mut elements: Vec<(SitemapElement, usize)>) -> Vec<sectio
             // todo: return an error
             return;
         };
-        while let Some((SitemapElement::Subsection(subsection), _)) = elements.last() {
+        while let Some((SitemapElement::SubSection(subsection), _)) = elements.last() {
             last_section.subsections.push(subsection.to_owned());
             elements.pop();
         }
@@ -1699,8 +1661,8 @@ pub fn resolve(
 ) -> fastn_core::Result<fastn_core::sitemap::dynamic_urls::ResolveDocOutput> {
     // resolve in sitemap
     if let Some(sitemap) = package.sitemap.as_ref() {
-        if let Some(document) = sitemap.resolve_document(path) {
-            return Ok((Some(document), vec![]));
+        if let Some((document, extra_data)) = sitemap.resolve_document(path) {
+            return Ok((Some(document), vec![], extra_data));
         }
     };
 
@@ -1709,5 +1671,5 @@ pub fn resolve(
         return dynamic_urls.resolve_document(path);
     };
 
-    Ok((None, vec![]))
+    Ok((None, vec![], Default::default()))
 }

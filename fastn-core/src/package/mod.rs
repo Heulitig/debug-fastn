@@ -1,6 +1,7 @@
 pub mod app;
 pub mod dependency;
 pub mod package_doc;
+pub mod redirects;
 pub mod user_group;
 
 #[derive(Debug, Clone)]
@@ -10,7 +11,8 @@ pub struct Package {
     pub versioned: bool,
     pub translation_of: Box<Option<Package>>,
     pub translations: Vec<Package>,
-    pub language: Option<String>,
+    pub requested_language: Option<String>,
+    pub selected_language: Option<String>,
     pub about: Option<String>,
     pub zip: Option<String>,
     pub download_base_url: Option<String>,
@@ -34,7 +36,7 @@ pub struct Package {
 
     pub groups: std::collections::BTreeMap<String, crate::user_group::UserGroup>,
 
-    /// sitemap stores the structure of the package. The structure includes sections, subsections
+    /// sitemap stores the structure of the package. The structure includes sections, sub_sections
     /// and table of content (`toc`). This automatically converts the documents in package into the
     /// corresponding to structure.
     pub sitemap: Option<fastn_core::sitemap::Sitemap>,
@@ -59,13 +61,20 @@ pub struct Package {
     pub backend: bool,
 
     /// Headers for the WASM backend
-    pub backend_headers: Option<Vec<BackendHeader>>,
+    pub backend_headers: Option<Vec<fastn_package::old_fastn::BackendHeader>>,
 
     /// Installed Apps
     pub apps: Vec<app::App>,
 
     /// Package Icon
     pub icon: Option<ftd::ImageSrc>,
+
+    /// Redirect URLs
+    pub redirects: Option<ftd::Map<String>>,
+    pub system: Option<String>,
+    pub system_is_confidential: Option<bool>,
+
+    pub lang: Option<Lang>,
 }
 
 impl Package {
@@ -75,7 +84,9 @@ impl Package {
             versioned: false,
             translation_of: Box::new(None),
             translations: vec![],
-            language: None,
+            requested_language: None,
+            selected_language: None,
+            lang: None,
             about: None,
             zip: None,
             download_base_url: None,
@@ -98,55 +109,135 @@ impl Package {
             backend_headers: None,
             apps: vec![],
             icon: None,
+            redirects: None,
+            system: None,
+            system_is_confidential: None,
         }
     }
 
+    #[tracing::instrument(skip(self))]
     pub fn get_font_ftd(&self) -> Option<String> {
         use itertools::Itertools;
         if self.fonts.is_empty() {
-            None
-        } else {
-            let (font_record, fonts) = self
-                .fonts
-                .iter()
-                .unique_by(|font| font.name.as_str())
-                .collect_vec()
-                .iter()
-                .fold(
-                    (
-                        String::from("-- record font:"),
-                        String::from("-- font fonts:"),
-                    ),
-                    |(record_accumulator, instance_accumulator), font| {
-                        (
-                            format!(
-                                "{pre}\nstring {font_var_name}:",
-                                pre = record_accumulator,
-                                font_var_name = font.name.as_str(),
-                            ),
-                            format!(
-                                "{pre}\n{font_var_name}: {font_var_val}",
-                                pre = instance_accumulator,
-                                font_var_name = font.name.as_str(),
-                                font_var_val = font.html_name(self.name.as_str())
-                            ),
-                        )
-                    },
-                );
-            Some(format!(
-                indoc::indoc! {"
-                            {font_record}
-                            {fonts}
-                        "},
-                font_record = font_record,
-                fonts = fonts
-            ))
+            return None;
         }
+        let (font_record, fonts) = self
+            .fonts
+            .iter()
+            .unique_by(|font| font.name.as_str())
+            .collect_vec()
+            .iter()
+            .fold(
+                (
+                    String::from("-- record font:"),
+                    String::from("-- font fonts:"),
+                ),
+                |(record_accumulator, instance_accumulator), font| {
+                    (
+                        format!(
+                            "{pre}\nstring {font_var_name}:",
+                            pre = record_accumulator,
+                            font_var_name = font.name.as_str(),
+                        ),
+                        format!(
+                            "{pre}\n{font_var_name}: {font_var_val}",
+                            pre = instance_accumulator,
+                            font_var_name = font.name.as_str(),
+                            font_var_val = font.html_name(self.name.as_str())
+                        ),
+                    )
+                },
+            );
+        Some(format!("{font_record}\n{fonts}"))
     }
 
     pub fn with_base(mut self, base: String) -> fastn_core::Package {
         self.download_base_url = Some(base);
         self
+    }
+
+    pub fn current_language_meta(
+        &self,
+    ) -> ftd::interpreter::Result<fastn_core::library2022::processor::lang_details::LanguageMeta>
+    {
+        let default_language = "en".to_string();
+        let current_language = self
+            .requested_language
+            .as_ref()
+            .unwrap_or(self.selected_language.as_ref().unwrap_or(&default_language));
+
+        let lang = realm_lang::Language::from_2_letter_code(current_language).map_err(
+            |realm_lang::Error::InvalidCode { ref found }| ftd::interpreter::Error::ParseError {
+                message: found.clone(),
+                doc_id: format!("{}/FASTN.ftd", self.name.as_str()),
+                line_number: 0,
+            },
+        )?;
+
+        Ok(
+            fastn_core::library2022::processor::lang_details::LanguageMeta {
+                id: lang.to_2_letter_code().to_string(),
+                id3: lang.to_3_letter_code().to_string(),
+                human: lang.human(),
+                is_current: true,
+            },
+        )
+    }
+
+    pub fn available_languages_meta(
+        &self,
+    ) -> ftd::interpreter::Result<Vec<fastn_core::library2022::processor::lang_details::LanguageMeta>>
+    {
+        let current_language = self.selected_language.clone();
+        let mut available_languages = vec![];
+
+        if let Some(ref lang) = self.lang {
+            for lang_id in lang.available_languages.keys() {
+                let language = realm_lang::Language::from_2_letter_code(lang_id).map_err(
+                    |realm_lang::Error::InvalidCode { ref found }| {
+                        ftd::interpreter::Error::ParseError {
+                            message: found.clone(),
+                            doc_id: format!("{}/FASTN.ftd", self.name.as_str()),
+                            line_number: 0,
+                        }
+                    },
+                )?;
+                available_languages.push(
+                    fastn_core::library2022::processor::lang_details::LanguageMeta {
+                        id: language.to_2_letter_code().to_string(),
+                        id3: language.to_3_letter_code().to_string(),
+                        human: language.human(),
+                        is_current: is_active_language(
+                            &current_language,
+                            &language,
+                            self.name.as_str(),
+                        )?,
+                    },
+                );
+            }
+        }
+
+        return Ok(available_languages);
+
+        fn is_active_language(
+            current: &Option<String>,
+            other: &realm_lang::Language,
+            package_name: &str,
+        ) -> ftd::interpreter::Result<bool> {
+            if let Some(ref current) = current {
+                let current = realm_lang::Language::from_2_letter_code(current.as_str()).map_err(
+                    |realm_lang::Error::InvalidCode { ref found }| {
+                        ftd::interpreter::Error::ParseError {
+                            message: found.clone(),
+                            doc_id: format!("{}/FASTN.ftd", package_name),
+                            line_number: 0,
+                        }
+                    },
+                )?;
+                return Ok(current.eq(other));
+            }
+            Ok(false)
+        }
     }
 
     pub fn get_dependency_for_interface(&self, interface: &str) -> Option<&fastn_core::Dependency> {
@@ -170,8 +261,7 @@ impl Package {
     pub fn get_font_html(&self) -> String {
         self.fonts.iter().fold(String::new(), |accumulator, font| {
             format!(
-                "{pre}{new}\n",
-                pre = accumulator,
+                "{accumulator}{new}\n",
                 new = font.to_html(self.name.as_str())
             )
         })
@@ -197,12 +287,17 @@ impl Package {
                 }
             }
             Some(format!(
-                "{}\n-- import: {}{}",
+                "{}\n-- import: {}{}{}",
                 pre.unwrap_or_default(),
                 &import_doc_path,
                 match &ai.alias {
                     Some(a) => format!(" as {}", a),
                     None => String::new(),
+                },
+                if ai.exposing.is_empty() {
+                    "".to_string()
+                } else {
+                    format!("\nexposing: {}\n", ai.exposing.join(","))
                 }
             ))
         })
@@ -231,7 +326,7 @@ impl Package {
         id: &str,
         line_number: usize,
         with_alias: bool,
-    ) -> ftd::p1::Result<String> {
+    ) -> ftd::ftd2021::p1::Result<String> {
         let mut parts = import_content.splitn(2, '/');
         match (parts.next(), parts.next()) {
             (Some(front), Some(rem)) => {
@@ -259,7 +354,7 @@ impl Package {
             }
             _ => {
                 // Throw error for unknown type-1 import
-                Err(ftd::p1::Error::ParseError {
+                Err(ftd::ftd2021::p1::Error::ParseError {
                     message: "invalid aliased import !! (Type-1)".to_string(),
                     doc_id: id.to_string(),
                     line_number,
@@ -274,7 +369,7 @@ impl Package {
         import_content: &str,
         id: &str,
         line_number: usize,
-    ) -> ftd::p1::Result<String> {
+    ) -> ftd::ftd2021::p1::Result<String> {
         let mut parts = import_content.splitn(2, " as ");
 
         match (parts.next(), parts.next()) {
@@ -289,7 +384,7 @@ impl Package {
             }
             _ => {
                 // Throw error for unknown type-2 import
-                Err(ftd::p1::Error::ParseError {
+                Err(ftd::ftd2021::p1::Error::ParseError {
                     message: "invalid aliased import !! (Type-2)".to_string(),
                     doc_id: id.to_string(),
                     line_number,
@@ -326,7 +421,7 @@ impl Package {
     ///
     /// map:    -- import full_path_of_alias as alias_2
     ///
-    pub fn fix_imports_in_body(&self, body: &str, id: &str) -> ftd::p1::Result<String> {
+    pub fn fix_imports_in_body(&self, body: &str, id: &str) -> ftd::ftd2021::p1::Result<String> {
         let mut new_body = String::new();
         let mut ln = 1;
 
@@ -338,7 +433,7 @@ impl Package {
                     // Split [-- import | content]
                     let import_tokens: Vec<&str> = line_string.split(':').collect();
                     if import_tokens.len() <= 1 {
-                        return Err(ftd::p1::Error::ParseError {
+                        return Err(ftd::ftd2021::p1::Error::ParseError {
                             message: "Import content missing !!".to_string(),
                             doc_id: id.to_string(),
                             line_number: ln,
@@ -376,8 +471,14 @@ impl Package {
             return body.to_string();
         };
         match self.generate_prefix_string(with_alias) {
-            Some(s) => format!("{}\n\n{}", s.trim(), body),
-            None => body.to_string(),
+            Some(s) => {
+                let t = format!("{}\n\n{}", s, body);
+                self.fix_imports_in_body(t.as_str(), id).ok().unwrap_or(t)
+            }
+            None => self
+                .fix_imports_in_body(body, id)
+                .ok()
+                .unwrap_or(body.to_string()),
         }
     }
 
@@ -405,7 +506,7 @@ impl Package {
                 url = format!("{}/", url);
             }
 
-            return format!("\n<link rel=\"canonical\" href=\"{url}\" />", url = url);
+            return format!("\n<link rel=\"canonical\" href=\"{url}\" /><meta property=\"og:url\" content=\"{url}\" />", url = url);
         }
 
         if path.starts_with("-/") {
@@ -433,7 +534,7 @@ impl Package {
                 };
                 // Ignore the fastn document as that path won't exist in the reference website
                 format!(
-                    "\n<link rel=\"canonical\" href=\"{canonical_base}{path}\" />",
+                    "\n<link rel=\"canonical\" href=\"{canonical_base}{path}\" /><meta property=\"og:url\" content=\"{canonical_base}{path}\" />",
                     canonical_base = url,
                     path = path
                 )
@@ -470,7 +571,7 @@ impl Package {
     ) -> fastn_core::Result<()> {
         tracing::info!(path = fastn_path.as_str());
         let fastn_document = {
-            let doc = tokio::fs::read_to_string(fastn_path).await?;
+            let doc = fastn_core::tokio_fs::read_to_string(fastn_path).await?;
             let lib = fastn_core::FastnLibrary::default();
             match fastn_core::doc::parse_ftd("fastn", doc.as_str(), &lib) {
                 Ok(v) => v,
@@ -486,7 +587,8 @@ impl Package {
             }
         };
         let mut package = {
-            let temp_package: PackageTemp = fastn_document.get("fastn#package")?;
+            let temp_package: fastn_package::old_fastn::PackageTemp =
+                fastn_document.get("fastn#package")?;
             temp_package.into_package()
         };
         package.translation_status_summary =
@@ -505,16 +607,18 @@ impl Package {
         let groups = crate::user_group::UserGroupTemp::user_groups(user_groups)?;
         package.groups = groups;
         package.auto_import = fastn_document
-            .get::<Vec<String>>("fastn#auto-import")?
-            .iter()
-            .map(|f| fastn_core::AutoImport::from_string(f.as_str()))
+            .get::<Vec<fastn_core::package::dependency::AutoImportTemp>>("fastn#auto-import")?
+            .into_iter()
+            .map(|f| f.into_auto_import())
             .collect();
+
         package.fonts = fastn_document.get("fastn#font")?;
         package.sitemap_temp = fastn_document.get("fastn#sitemap")?;
         *self = package;
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
     pub(crate) async fn get_and_resolve(
         &self,
         package_root: &camino::Utf8PathBuf,
@@ -538,9 +642,10 @@ impl Package {
 
     pub fn from_fastn_doc(
         root: &camino::Utf8Path,
-        fastn_doc: &ftd::p2::Document,
+        fastn_doc: &ftd::ftd2021::p2::Document,
     ) -> fastn_core::Result<Package> {
-        let temp_package: Option<PackageTemp> = fastn_doc.get("fastn#package")?;
+        let temp_package: Option<fastn_package::old_fastn::PackageTemp> =
+            fastn_doc.get("fastn#package")?;
 
         let mut package = match temp_package {
             Some(v) => v.into_package(),
@@ -555,6 +660,7 @@ impl Package {
         let mut deps = {
             let temp_deps: Vec<fastn_core::package::dependency::DependencyTemp> =
                 fastn_doc.get("fastn#dependency")?;
+
             temp_deps
                 .into_iter()
                 .map(|v| v.into_dependency())
@@ -577,18 +683,47 @@ impl Package {
                 implements: Vec::new(),
                 endpoint: None,
                 mountpoint: None,
+                provided_via: None,
+                required_as: None,
             });
         };
         // setting dependencies
         package.dependencies = deps;
+        // package.resolve_system_dependencies()?;
+
         package.fastn_path = Some(root.join("FASTN.ftd"));
 
+        package.redirects = {
+            let redirects_temp: Option<redirects::RedirectsTemp> =
+                fastn_doc.get("fastn#redirects")?;
+            if let Some(redirects) = redirects_temp {
+                let result = redirects
+                    .redirects_from_body()
+                    .map_err(|e| fastn_core::Error::GenericError(e.to_string()))?;
+                Some(result)
+            } else {
+                None
+            }
+        };
+
         package.auto_import = fastn_doc
-            .get::<Vec<String>>("fastn#auto-import")?
-            .iter()
-            .map(|f| fastn_core::AutoImport::from_string(f.as_str()))
+            .get::<Vec<fastn_core::package::dependency::AutoImportTemp>>("fastn#auto-import")?
+            .into_iter()
+            .map(|f| f.into_auto_import())
             .collect();
 
+        if let Some(ref system_alias) = package.system {
+            if package.system_is_confidential.unwrap_or(true) {
+                return fastn_core::usage_error(format!("system-is-confidential is needed for system package {} and currently only false is supported.", package.name));
+            }
+            package.auto_import.push(fastn_core::AutoImport {
+                path: package.name.clone(),
+                alias: Some(system_alias.clone()),
+                exposing: vec![],
+            });
+        }
+
+        package.auto_import_language(None, None)?;
         package.ignored_paths = fastn_doc.get::<Vec<String>>("fastn#ignore")?;
         package.fonts = fastn_doc.get("fastn#font")?;
         package.sitemap_temp = fastn_doc.get("fastn#sitemap")?;
@@ -659,51 +794,77 @@ impl Package {
             None => self.endpoint.as_ref().map(|ep| (ep.as_str(), path)),
         }
     }
+
+    pub fn auto_import_language(
+        &mut self,
+        req_lang: Option<String>,
+        main_package_selected_language: Option<String>,
+    ) -> fastn_core::Result<()> {
+        let lang = if let Some(lang) = &self.lang {
+            lang
+        } else {
+            return Ok(());
+        };
+        let mut lang_module_path_with_language = None;
+
+        if let Some(request_lang) = req_lang.as_ref() {
+            lang_module_path_with_language = lang
+                .available_languages
+                .get(request_lang)
+                .map(|module| (module, request_lang.to_string()));
+        }
+
+        if lang_module_path_with_language.is_none() && !main_package_selected_language.eq(&req_lang)
+        {
+            if let Some(main_package_selected_language) = main_package_selected_language.as_ref() {
+                lang_module_path_with_language = lang
+                    .available_languages
+                    .get(main_package_selected_language)
+                    .map(|module| (module, main_package_selected_language.to_string()));
+            }
+        }
+
+        if lang_module_path_with_language.is_none() {
+            lang_module_path_with_language = lang
+                .available_languages
+                .get(&lang.default_lang)
+                .map(|v| (v, lang.default_lang.to_string()));
+        }
+
+        let (lang_module_path, language) = match lang_module_path_with_language {
+            Some(v) => v,
+            None => {
+                return fastn_core::usage_error(format!(
+                "Module corresponding to `default-language: {}` is not provided in FASTN.ftd of {}",
+                lang.default_lang, self.name
+            ))
+            }
+        };
+
+        self.auto_import.push(fastn_core::AutoImport {
+            path: lang_module_path.to_string(),
+            alias: Some("lang".to_string()),
+            exposing: vec![],
+        });
+
+        self.requested_language = req_lang;
+        self.selected_language = Some(language);
+        Ok(())
+    }
 }
 
-/// Backend Header is a struct that is used to read and store the backend-header from the FASTN.ftd file
-#[derive(serde::Deserialize, Debug, Clone)]
-pub struct BackendHeader {
-    #[serde(rename = "header-key")]
-    pub header_key: String,
-    #[serde(rename = "header-value")]
-    pub header_value: String,
-}
-/// PackageTemp is a struct that is used for mapping the `fastn.package` data in FASTN.ftd file. It is
-/// not used elsewhere in program, it is immediately converted to `fastn_core::Package` struct during
-/// deserialization process
-#[derive(serde::Deserialize, Debug, Clone)]
-pub(crate) struct PackageTemp {
-    pub name: String,
-    pub versioned: bool,
-    #[serde(rename = "translation-of")]
-    pub translation_of: Option<String>,
-    #[serde(rename = "translation")]
-    pub translations: Vec<String>,
-    #[serde(rename = "language")]
-    pub language: Option<String>,
-    pub about: Option<String>,
-    pub zip: Option<String>,
-    #[serde(rename = "download-base-url")]
-    pub download_base_url: Option<String>,
-    #[serde(rename = "canonical-url")]
-    pub canonical_url: Option<String>,
-    #[serde(rename = "inherit-auto-imports-from-original")]
-    pub import_auto_imports_from_original: bool,
-    #[serde(rename = "favicon")]
-    pub favicon: Option<String>,
-    #[serde(rename = "endpoint")]
-    pub endpoint: Option<String>,
-    #[serde(rename = "backend")]
-    pub backend: bool,
-    #[serde(rename = "backend-headers")]
-    pub backend_headers: Option<Vec<BackendHeader>>,
-    #[serde(rename = "icon")]
-    pub icon: Option<ftd::ImageSrc>,
+#[derive(Debug, Clone)]
+pub struct Lang {
+    pub default_lang: String,
+    pub available_languages: std::collections::HashMap<String, String>,
 }
 
-impl PackageTemp {
-    pub fn into_package(self) -> Package {
+trait PackageTempIntoPackage {
+    fn into_package(self) -> Package;
+}
+
+impl PackageTempIntoPackage for fastn_package::old_fastn::PackageTemp {
+    fn into_package(self) -> Package {
         // TODO: change this method to: `validate(self) -> fastn_core::Result<fastn_core::Package>` and do all
         //       validations in it. Like a package must not have both translation-of and
         //       `translations` set.
@@ -718,12 +879,126 @@ impl PackageTemp {
             .map(|v| Package::new(&v))
             .collect::<Vec<Package>>();
 
+        // Currently supported languages
+        // English - en
+        // Hindi- hi
+        // Chinese - zh
+        // Spanish - es
+        // Arabic - ar
+        // Portuguese - pt
+        // Russian - ru
+        // French - fr
+        // German - de
+        // Japanese - ja
+        // Bengali - bn
+        // Urdu - ur
+        // Indonesian - id
+        // Turkish - tr
+        // Vietnamese - vi
+        // Italian - it
+        // Polish - pl
+        // Thai - th
+        // Dutch - nl
+        // Korean - ko
+        let lang = if let Some(default_lang) = &self.default_language {
+            let mut available_languages = std::collections::HashMap::new();
+
+            if let Some(lang_en) = self.translation_en {
+                available_languages.insert("en".to_string(), lang_en);
+            }
+
+            if let Some(lang_hi) = self.translation_hi {
+                available_languages.insert("hi".to_string(), lang_hi);
+            }
+
+            if let Some(lang_zh) = self.translation_zh {
+                available_languages.insert("zh".to_string(), lang_zh);
+            }
+
+            if let Some(lang_es) = self.translation_es {
+                available_languages.insert("es".to_string(), lang_es);
+            }
+
+            if let Some(lang_ar) = self.translation_ar {
+                available_languages.insert("ar".to_string(), lang_ar);
+            }
+
+            if let Some(lang_pt) = self.translation_pt {
+                available_languages.insert("pt".to_string(), lang_pt);
+            }
+
+            if let Some(lang_ru) = self.translation_ru {
+                available_languages.insert("ru".to_string(), lang_ru);
+            }
+
+            if let Some(lang_fr) = self.translation_fr {
+                available_languages.insert("fr".to_string(), lang_fr);
+            }
+
+            if let Some(lang_de) = self.translation_de {
+                available_languages.insert("de".to_string(), lang_de);
+            }
+
+            if let Some(lang_ja) = self.translation_ja {
+                available_languages.insert("ja".to_string(), lang_ja);
+            }
+
+            if let Some(lang_bn) = self.translation_bn {
+                available_languages.insert("bn".to_string(), lang_bn);
+            }
+
+            if let Some(lang_ur) = self.translation_ur {
+                available_languages.insert("ur".to_string(), lang_ur);
+            }
+
+            if let Some(lang_id) = self.translation_id {
+                available_languages.insert("id".to_string(), lang_id);
+            }
+
+            if let Some(lang_tr) = self.translation_tr {
+                available_languages.insert("tr".to_string(), lang_tr);
+            }
+
+            if let Some(lang_vi) = self.translation_vi {
+                available_languages.insert("vi".to_string(), lang_vi);
+            }
+
+            if let Some(lang_it) = self.translation_it {
+                available_languages.insert("it".to_string(), lang_it);
+            }
+
+            if let Some(lang_pl) = self.translation_pl {
+                available_languages.insert("pl".to_string(), lang_pl);
+            }
+
+            if let Some(lang_th) = self.translation_th {
+                available_languages.insert("th".to_string(), lang_th);
+            }
+
+            if let Some(lang_nl) = self.translation_nl {
+                available_languages.insert("nl".to_string(), lang_nl);
+            }
+
+            if let Some(lang_ko) = self.translation_ko {
+                available_languages.insert("ko".to_string(), lang_ko);
+            }
+
+            Some(Lang {
+                default_lang: default_lang.to_string(),
+                available_languages,
+            })
+        } else {
+            None
+        };
+
         Package {
             name: self.name.clone(),
             versioned: self.versioned,
             translation_of: Box::new(translation_of),
             translations,
-            language: self.language,
+            requested_language: None,
+            selected_language: None,
+            lang,
             about: self.about,
             zip: self.zip,
             download_base_url: self.download_base_url.or(Some(self.name)),
@@ -746,6 +1021,9 @@ impl PackageTemp {
             backend_headers: self.backend_headers,
             apps: vec![],
             icon: self.icon,
+            redirects: None,
+            system: self.system,
+            system_is_confidential: self.system_is_confidential,
         }
     }
 }

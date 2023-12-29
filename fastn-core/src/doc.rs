@@ -1,45 +1,42 @@
-type ParsedDocC =
-    std::sync::RwLock<std::collections::HashMap<String, ftd::interpreter2::ParsedDocument>>;
-static PARSED_DOC_CACHE: once_cell::sync::Lazy<ParsedDocC> =
-    once_cell::sync::Lazy::new(|| std::sync::RwLock::new(std::collections::HashMap::new()));
-
 fn cached_parse(
     id: &str,
     source: &str,
     line_number: usize,
-) -> ftd::interpreter2::Result<ftd::interpreter2::ParsedDocument> {
-    if let Some(doc) = cached_doc(id) {
-        return Ok(doc);
+) -> ftd::interpreter::Result<ftd::interpreter::ParsedDocument> {
+    #[derive(serde::Deserialize, serde::Serialize)]
+    struct C {
+        hash: String,
+        doc: ftd::interpreter::ParsedDocument,
     }
 
-    let doc = ftd::interpreter2::ParsedDocument::parse_with_line_number(id, source, line_number)?;
-    if fastn_core::utils::parse_caching_enabled() {
-        if let Ok(mut l) = PARSED_DOC_CACHE.write() {
-            l.insert(id.to_string(), doc.clone());
-        }
-    }
-    return Ok(doc);
+    let hash = fastn_core::utils::generate_hash(source);
 
-    fn cached_doc(id: &str) -> Option<ftd::interpreter2::ParsedDocument> {
-        if let Ok(l) = PARSED_DOC_CACHE.read() {
-            return l.get(id).cloned();
+    /* if let Some(c) = fastn_core::utils::get_cached::<C>(id) {
+        if c.hash == hash {
+            tracing::debug!("cache hit");
+            return Ok(c.doc);
         }
-        None
-    }
+        tracing::debug!("cached hash mismatch");
+    } else {
+        tracing::debug!("cached miss");
+    }*/
+
+    let doc = ftd::interpreter::ParsedDocument::parse_with_line_number(id, source, line_number)?;
+    fastn_core::utils::cache_it(id, C { doc, hash }).map(|v| v.doc)
 }
 
 #[tracing::instrument(skip_all)]
-pub async fn interpret_helper<'a>(
+pub async fn interpret_helper(
     name: &str,
     source: &str,
-    lib: &'a mut fastn_core::Library2022,
+    lib: &mut fastn_core::Library2022,
     base_url: &str,
     download_assets: bool,
     line_number: usize,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Document> {
+) -> ftd::interpreter::Result<ftd::interpreter::Document> {
     tracing::info!(document = name);
     let doc = cached_parse(name, source, line_number)?;
-    let mut s = ftd::interpreter2::interpret_with_line_number(name, doc, line_number)?;
+    let mut s = ftd::interpreter::interpret_with_line_number(name, doc)?;
     lib.module_package_map.insert(
         name.trim_matches('/').to_string(),
         lib.config.package.name.to_string(),
@@ -47,18 +44,19 @@ pub async fn interpret_helper<'a>(
     let document;
     loop {
         match s {
-            ftd::interpreter2::Interpreter::Done { document: doc } => {
+            ftd::interpreter::Interpreter::Done { document: doc } => {
                 document = doc;
                 break;
             }
-            ftd::interpreter2::Interpreter::StuckOnImport {
+            ftd::interpreter::Interpreter::StuckOnImport {
                 module,
                 state: mut st,
                 caller_module,
             } => {
-                let (source, foreign_variable, foreign_function, ignore_line_numbers) =
+                let (source, path, foreign_variable, foreign_function, ignore_line_numbers) =
                     resolve_import_2022(lib, &mut st, module.as_str(), caller_module.as_str())
                         .await?;
+                lib.dependencies_during_render.push(path);
                 let doc = cached_parse(module.as_str(), source.as_str(), ignore_line_numbers)?;
                 s = st.continue_after_import(
                     module.as_str(),
@@ -68,7 +66,7 @@ pub async fn interpret_helper<'a>(
                     ignore_line_numbers,
                 )?;
             }
-            ftd::interpreter2::Interpreter::StuckOnProcessor {
+            ftd::interpreter::Interpreter::StuckOnProcessor {
                 state,
                 ast,
                 module,
@@ -76,7 +74,7 @@ pub async fn interpret_helper<'a>(
                 ..
             } => {
                 let doc = state.get_current_processing_module().ok_or(
-                    ftd::interpreter2::Error::ValueNotFound {
+                    ftd::interpreter::Error::ValueNotFound {
                         doc_id: module,
                         line_number: ast.line_number(),
                         message: "Cannot find the module".to_string(),
@@ -92,41 +90,33 @@ pub async fn interpret_helper<'a>(
                     .await?;
                 s = state.continue_after_processor(value, ast)?;
             }
-            ftd::interpreter2::Interpreter::StuckOnForeignVariable {
+            ftd::interpreter::Interpreter::StuckOnForeignVariable {
                 state,
                 module,
                 variable,
                 caller_module,
             } => {
-                if module.eq("test") {
-                    let value = ftd::interpreter2::Value::String {
-                        text: variable.to_uppercase().to_string(),
-                    };
-                    s = state.continue_after_variable(module.as_str(), variable.as_str(), value)?;
-                } else {
-                    let value = resolve_foreign_variable2022(
-                        variable.as_str(),
-                        module.as_str(),
-                        &state,
-                        lib,
-                        base_url,
-                        download_assets,
-                        caller_module.as_str(),
-                    )
-                    .await?;
-                    s = state.continue_after_variable(module.as_str(), variable.as_str(), value)?;
-                }
+                let value = resolve_foreign_variable2022(
+                    variable.as_str(),
+                    module.as_str(),
+                    lib,
+                    base_url,
+                    download_assets,
+                    caller_module.as_str(),
+                )
+                .await?;
+                s = state.continue_after_variable(module.as_str(), variable.as_str(), value)?;
             }
         }
     }
     Ok(document)
 }
 
-pub async fn resolve_import<'a>(
-    lib: &'a mut fastn_core::Library2,
-    state: &mut ftd::InterpreterState,
+pub async fn resolve_import(
+    lib: &mut fastn_core::Library2,
+    state: &mut ftd::ftd2021::InterpreterState,
     module: &str,
-) -> ftd::p1::Result<String> {
+) -> ftd::ftd2021::p1::Result<String> {
     lib.packages_under_process
         .truncate(state.document_stack.len());
     let current_package = lib.get_current_package()?;
@@ -149,6 +139,7 @@ pub async fn resolve_import<'a>(
                     lib.push_package_under_process(package).await?;
                     font_ftd = lib
                         .config
+                        .config
                         .all_packages
                         .borrow()
                         .get(package.name.as_str())
@@ -168,20 +159,28 @@ pub async fn resolve_import<'a>(
 }
 
 // source, foreign_variable, foreign_function
-pub async fn resolve_import_2022<'a>(
-    lib: &'a mut fastn_core::Library2022,
-    _state: &mut ftd::interpreter2::InterpreterState,
+pub async fn resolve_import_2022(
+    lib: &mut fastn_core::Library2022,
+    _state: &mut ftd::interpreter::InterpreterState,
     module: &str,
     caller_module: &str,
-) -> ftd::interpreter2::Result<(String, Vec<String>, Vec<String>, usize)> {
+) -> ftd::interpreter::Result<(String, String, Vec<String>, Vec<String>, usize)> {
     let current_package = lib.get_current_package(caller_module)?;
     let source = if module.eq("fastn/time") {
-        ("".to_string(), vec!["time".to_string()], vec![], 0)
+        (
+            "".to_string(),
+            "$fastn$/time.ftd".to_string(),
+            vec!["time".to_string()],
+            vec![],
+            0,
+        )
     } else if module.eq("fastn/processors") {
         (
             fastn_core::processor_ftd().to_string(),
+            "$fastn$/processors.ftd".to_string(),
             vec![],
             vec![
+                "figma-typo-token".to_string(),
                 "figma-cs-token".to_string(),
                 "figma-cs-token-old".to_string(),
                 "http".to_string(),
@@ -202,9 +201,16 @@ pub async fn resolve_import_2022<'a>(
                 "user-details".to_string(),
                 "fastn-apps".to_string(),
                 "is-reader".to_string(),
+                "sql".to_string(),
                 "package-query".to_string(),
+                "tutor".to_string(),
+                "pg".to_string(),
                 "package-tree".to_string(),
                 "fetch-file".to_string(),
+                "query".to_string(),
+                "current-language".to_string(),
+                "current-url".to_string(),
+                "translation-info".to_string(),
             ],
             0,
         )
@@ -214,12 +220,14 @@ pub async fn resolve_import_2022<'a>(
         if module.starts_with(current_package.name.as_str()) {
             (
                 current_package.get_font_ftd().unwrap_or_default(),
+                format!("{name}/-/assets.ftd", name = current_package.name),
                 foreign_variable,
                 vec![],
                 0,
             )
         } else {
             let mut font_ftd = "".to_string();
+            let mut path = "".to_string();
             for (alias, package) in current_package.aliases() {
                 if module.starts_with(alias) {
                     lib.push_package_under_process(module, package).await?;
@@ -231,22 +239,28 @@ pub async fn resolve_import_2022<'a>(
                         .unwrap()
                         .get_font_ftd()
                         .unwrap_or_default();
+                    path = format!("{name}/-/fonts.ftd", name = package.name);
                     break;
                 }
             }
-            (font_ftd, foreign_variable, vec![], 0)
+            (font_ftd, path, foreign_variable, vec![], 0)
         }
     } else {
-        let (content, ignore_line_numbers) = lib.get_with_result(module, caller_module).await?;
-
+        let (content, path, ignore_line_numbers) =
+            lib.get_with_result(module, caller_module).await?;
         (
             content,
+            path,
             vec![],
             vec![
+                "figma-typo-token".to_string(),
                 "figma-cs-token".to_string(),
                 "figma-cs-token-old".to_string(),
                 "http".to_string(),
+                "sql".to_string(),
                 "package-query".to_string(),
+                "tutor".to_string(),
+                "pg".to_string(),
                 "toc".to_string(),
                 "include".to_string(),
                 "get-data".to_string(),
@@ -270,6 +284,9 @@ pub async fn resolve_import_2022<'a>(
                 "user-details".to_string(),
                 "fastn-apps".to_string(),
                 "is-reader".to_string(),
+                "current-language".to_string(),
+                "current-url".to_string(),
+                "translation-info".to_string(),
             ],
             ignore_line_numbers,
         )
@@ -277,16 +294,15 @@ pub async fn resolve_import_2022<'a>(
     Ok(source)
 }
 
-#[tracing::instrument(name = "fastn_core::stuck-on-foreign-variable", err)]
+#[tracing::instrument(name = "fastn_core::stuck-on-foreign-variable", err, skip(lib))]
 pub async fn resolve_foreign_variable2022(
     variable: &str,
     doc_name: &str,
-    _state: &ftd::interpreter2::InterpreterState,
     lib: &mut fastn_core::Library2022,
     base_url: &str,
     download_assets: bool,
     caller_module: &str,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Value> {
+) -> ftd::interpreter::Result<ftd::interpreter::Value> {
     tracing::info!(doc = doc_name, var = variable);
     let package = lib.get_current_package(caller_module)?;
     if let Ok(value) = resolve_ftd_foreign_variable_2022(variable, doc_name) {
@@ -313,9 +329,17 @@ pub async fn resolve_foreign_variable2022(
         }
         for (alias, package) in package.aliases() {
             if alias.eq(&package_name) {
+                lib.push_package_under_process(doc_name, package).await?;
+                let package = lib
+                    .config
+                    .all_packages
+                    .borrow()
+                    .get(package.name.as_str())
+                    .unwrap_or(package)
+                    .to_owned();
                 if let Ok(value) = get_assets_value(
                     doc_name,
-                    package,
+                    &package,
                     files.as_str(),
                     lib,
                     base_url,
@@ -329,16 +353,16 @@ pub async fn resolve_foreign_variable2022(
         }
     }
 
-    return ftd::interpreter2::utils::e2(format!("{} not found 2", variable).as_str(), doc_name, 0);
+    return ftd::interpreter::utils::e2(format!("{} not found 2", variable).as_str(), doc_name, 0);
 
     async fn get_assets_value(
         module: &str,
         package: &fastn_core::Package,
         files: &str,
-        lib: &mut fastn_core::Library2022,
+        lib: &mut fastn_core::RequestConfig,
         base_url: &str,
         download_assets: bool, // true: in case of `fastn build`
-    ) -> ftd::p1::Result<ftd::interpreter2::Value> {
+    ) -> ftd::ftd2021::p1::Result<ftd::interpreter::Value> {
         lib.push_package_under_process(module, package).await?;
         let _base_url = base_url.trim_end_matches('/');
         let mut files = files.to_string();
@@ -375,7 +399,6 @@ pub async fn resolve_foreign_variable2022(
                 let light_path = format!("{}.{}", file.replace('.', "/"), ext);
                 if download_assets
                     && !lib
-                        .config
                         .downloaded_assets
                         .contains_key(&format!("{}/{}", package.name, light_path))
                 {
@@ -383,7 +406,7 @@ pub async fn resolve_foreign_variable2022(
                     let light = package
                         .resolve_by_file_name(light_path.as_str(), None, false)
                         .await
-                        .map_err(|e| ftd::p1::Error::ParseError {
+                        .map_err(|e| ftd::ftd2021::p1::Error::ParseError {
                             message: e.to_string(),
                             doc_id: lib.document_id.to_string(),
                             line_number: 0,
@@ -395,12 +418,12 @@ pub async fn resolve_foreign_variable2022(
                         light.as_slice(),
                     )
                     .await
-                    .map_err(|e| ftd::p1::Error::ParseError {
+                    .map_err(|e| ftd::ftd2021::p1::Error::ParseError {
                         message: e.to_string(),
                         doc_id: lib.document_id.to_string(),
                         line_number: 0,
                     })?;
-                    lib.config.downloaded_assets.insert(
+                    lib.downloaded_assets.insert(
                         format!("{}/{}", package.name, light_path),
                         light_mode.to_string(),
                     );
@@ -411,7 +434,7 @@ pub async fn resolve_foreign_variable2022(
                 }
 
                 if light {
-                    return Ok(ftd::interpreter2::Value::String {
+                    return Ok(ftd::interpreter::Value::String {
                         text: light_mode.trim_start_matches('/').to_string(),
                     });
                 }
@@ -433,7 +456,6 @@ pub async fn resolve_foreign_variable2022(
                 if download_assets && !file.ends_with("-dark") {
                     let start = std::time::Instant::now();
                     if let Some(dark) = lib
-                        .config
                         .downloaded_assets
                         .get(&format!("{}/{}", package.name, dark_path))
                     {
@@ -449,10 +471,12 @@ pub async fn resolve_foreign_variable2022(
                             dark.as_slice(),
                         )
                         .await
-                        .map_err(|e| ftd::p1::Error::ParseError {
-                            message: e.to_string(),
-                            doc_id: lib.document_id.to_string(),
-                            line_number: 0,
+                        .map_err(|e| {
+                            ftd::ftd2021::p1::Error::ParseError {
+                                message: e.to_string(),
+                                doc_id: lib.document_id.to_string(),
+                                line_number: 0,
+                            }
                         })?;
                         fastn_core::utils::print_end(
                             format!("Processed {}/{}", package.name.as_str(), dark_path).as_str(),
@@ -461,33 +485,33 @@ pub async fn resolve_foreign_variable2022(
                     } else {
                         dark_mode = light_mode.clone();
                     }
-                    lib.config.downloaded_assets.insert(
+                    lib.downloaded_assets.insert(
                         format!("{}/{}", package.name, dark_path),
                         dark_mode.to_string(),
                     );
                 }
 
                 if dark {
-                    return Ok(ftd::interpreter2::Value::String {
+                    return Ok(ftd::interpreter::Value::String {
                         text: dark_mode.trim_start_matches('/').to_string(),
                     });
                 }
                 #[allow(deprecated)]
-                Ok(ftd::interpreter2::Value::Record {
+                Ok(ftd::interpreter::Value::Record {
                     name: "ftd#image-src".to_string(),
                     fields: std::array::IntoIter::new([
                         (
                             "light".to_string(),
-                            ftd::interpreter2::PropertyValue::Value {
-                                value: ftd::interpreter2::Value::String { text: light_mode },
+                            ftd::interpreter::PropertyValue::Value {
+                                value: ftd::interpreter::Value::String { text: light_mode },
                                 is_mutable: false,
                                 line_number: 0,
                             },
                         ),
                         (
                             "dark".to_string(),
-                            ftd::interpreter2::PropertyValue::Value {
-                                value: ftd::interpreter2::Value::String { text: dark_mode },
+                            ftd::interpreter::PropertyValue::Value {
+                                value: ftd::interpreter::Value::String { text: dark_mode },
                                 is_mutable: false,
                                 line_number: 0,
                             },
@@ -504,13 +528,13 @@ pub async fn resolve_foreign_variable2022(
                     format!("{}.{}", file.replace('.', "/"), ext).as_str(),
                 )
                 .await?;
-                Ok(ftd::interpreter2::Value::String {
+                Ok(ftd::interpreter::Value::String {
                     text: format!("-/{}/{}.{}", package.name, file.replace('.', "/"), ext),
                 })
             }
             None => {
                 download(lib, download_assets, package, files.as_str()).await?;
-                Ok(ftd::interpreter2::Value::String {
+                Ok(ftd::interpreter::Value::String {
                     text: format!("-/{}/{}", package.name, files),
                 })
             }
@@ -523,10 +547,9 @@ async fn download(
     download_assets: bool,
     package: &fastn_core::Package,
     path: &str,
-) -> ftd::p1::Result<()> {
+) -> ftd::ftd2021::p1::Result<()> {
     if download_assets
         && !lib
-            .config
             .downloaded_assets
             .contains_key(&format!("{}/{}", package.name, path))
     {
@@ -534,7 +557,7 @@ async fn download(
         let data = package
             .resolve_by_file_name(path, None, false)
             .await
-            .map_err(|e| ftd::p1::Error::ParseError {
+            .map_err(|e| ftd::ftd2021::p1::Error::ParseError {
                 message: e.to_string(),
                 doc_id: lib.document_id.to_string(),
                 line_number: 0,
@@ -546,12 +569,12 @@ async fn download(
             data.as_slice(),
         )
         .await
-        .map_err(|e| ftd::p1::Error::ParseError {
+        .map_err(|e| ftd::ftd2021::p1::Error::ParseError {
             message: e.to_string(),
             doc_id: lib.document_id.to_string(),
             line_number: 0,
         })?;
-        lib.config.downloaded_assets.insert(
+        lib.downloaded_assets.insert(
             format!("{}/{}", package.name, path),
             format!("-/{}/{}", package.name, path),
         );
@@ -567,11 +590,11 @@ async fn download(
 pub async fn resolve_foreign_variable2(
     variable: &str,
     doc_name: &str,
-    state: &ftd::InterpreterState,
+    state: &ftd::ftd2021::InterpreterState,
     lib: &mut fastn_core::Library2,
     base_url: &str,
     download_assets: bool,
-) -> ftd::p1::Result<ftd::Value> {
+) -> ftd::ftd2021::p1::Result<ftd::Value> {
     lib.packages_under_process
         .truncate(state.document_stack.len());
     let package = lib.get_current_package()?;
@@ -598,7 +621,7 @@ pub async fn resolve_foreign_variable2(
         }
     }
 
-    return ftd::p2::utils::e2(format!("{} not found 2", variable).as_str(), doc_name, 0);
+    return ftd::ftd2021::p2::utils::e2(format!("{} not found 2", variable).as_str(), doc_name, 0);
 
     async fn get_assets_value(
         package: &fastn_core::Package,
@@ -606,7 +629,7 @@ pub async fn resolve_foreign_variable2(
         lib: &mut fastn_core::Library2,
         base_url: &str,
         download_assets: bool, // true: in case of `fastn build`
-    ) -> ftd::p1::Result<ftd::Value> {
+    ) -> ftd::ftd2021::p1::Result<ftd::Value> {
         lib.push_package_under_process(package).await?;
         let base_url = base_url.trim_end_matches('/');
         let mut files = files.to_string();
@@ -656,19 +679,23 @@ pub async fn resolve_foreign_variable2(
                     let light = package
                         .resolve_by_file_name(light_path.as_str(), None, false)
                         .await
-                        .map_err(|e| ftd::p1::Error::ParseError {
+                        .map_err(|e| ftd::ftd2021::p1::Error::ParseError {
                             message: e.to_string(),
                             doc_id: lib.document_id.to_string(),
                             line_number: 0,
                         })?;
                     print!("Processing {}/{} ... ", package.name.as_str(), light_path);
                     fastn_core::utils::write(
-                        &lib.config.build_dir().join("-").join(package.name.as_str()),
+                        &lib.config
+                            .config
+                            .build_dir()
+                            .join("-")
+                            .join(package.name.as_str()),
                         light_path.as_str(),
                         light.as_slice(),
                     )
                     .await
-                    .map_err(|e| ftd::p1::Error::ParseError {
+                    .map_err(|e| ftd::ftd2021::p1::Error::ParseError {
                         message: e.to_string(),
                         doc_id: lib.document_id.to_string(),
                         line_number: 0,
@@ -718,15 +745,21 @@ pub async fn resolve_foreign_variable2(
                     {
                         print!("Processing {}/{} ... ", package.name.as_str(), dark_path);
                         fastn_core::utils::write(
-                            &lib.config.build_dir().join("-").join(package.name.as_str()),
+                            &lib.config
+                                .config
+                                .build_dir()
+                                .join("-")
+                                .join(package.name.as_str()),
                             dark_path.as_str(),
                             dark.as_slice(),
                         )
                         .await
-                        .map_err(|e| ftd::p1::Error::ParseError {
-                            message: e.to_string(),
-                            doc_id: lib.document_id.to_string(),
-                            line_number: 0,
+                        .map_err(|e| {
+                            ftd::ftd2021::p1::Error::ParseError {
+                                message: e.to_string(),
+                                doc_id: lib.document_id.to_string(),
+                                line_number: 0,
+                            }
                         })?;
                         fastn_core::utils::print_end(
                             format!("Processed {}/{}", package.name.as_str(), dark_path).as_str(),
@@ -785,40 +818,45 @@ pub async fn resolve_foreign_variable2(
     }
 }
 
+pub async fn parse_ftd_2023(
+    name: &str,
+    source: &str,
+    config: &fastn_core::Config,
+) -> ftd::interpreter::Result<ftd::interpreter::Document> {
+    let req = fastn_core::http::Request::default();
+    let mut lib = fastn_core::RequestConfig::new(config, &req, "", "/");
+    fastn_core::doc::interpret_helper(name, source, &mut lib, "/", false, 0).await
+}
+
 // No need to make async since this is pure.
 pub fn parse_ftd(
     name: &str,
     source: &str,
     lib: &fastn_core::FastnLibrary,
-) -> ftd::p1::Result<ftd::p2::Document> {
-    let mut s = ftd::interpret(name, source, &None)?;
+) -> ftd::ftd2021::p1::Result<ftd::ftd2021::p2::Document> {
+    let mut s = ftd::ftd2021::interpret(name, source, &None)?;
     let document;
     loop {
         match s {
-            ftd::Interpreter::Done { document: doc } => {
+            ftd::ftd2021::Interpreter::Done { document: doc } => {
                 document = doc;
                 break;
             }
-            ftd::Interpreter::StuckOnProcessor { state, section } => {
-                let value = lib.process(
-                    &section,
-                    &state.tdoc(&mut Default::default(), &mut Default::default()),
-                )?;
-                s = state.continue_after_processor(&section, value)?;
+            ftd::ftd2021::Interpreter::StuckOnProcessor { .. } => {
+                unimplemented!()
             }
-            ftd::Interpreter::StuckOnImport { module, state: st } => {
+            ftd::ftd2021::Interpreter::StuckOnImport { module, state: st } => {
                 let source = lib.get_with_result(
                     module.as_str(),
                     &st.tdoc(&mut Default::default(), &mut Default::default()),
                 )?;
                 s = st.continue_after_import(module.as_str(), source.as_str())?;
             }
-            ftd::Interpreter::StuckOnForeignVariable { variable, state } => {
-                let value = resolve_ftd_foreign_variable(variable.as_str(), name)?;
-                s = state.continue_after_variable(variable.as_str(), value)?
+            ftd::ftd2021::Interpreter::StuckOnForeignVariable { .. } => {
+                unimplemented!()
             }
-            ftd::Interpreter::CheckID { .. } => {
-                // No config in fastn_core::fastnLibrary ignoring processing terms here
+            ftd::ftd2021::Interpreter::CheckID { .. } => {
+                // No config in fastn_core::FastnLibrary ignoring processing terms here
                 unimplemented!()
             }
         }
@@ -826,7 +864,10 @@ pub fn parse_ftd(
     Ok(document)
 }
 
-fn resolve_ftd_foreign_variable(variable: &str, doc_name: &str) -> ftd::p1::Result<ftd::Value> {
+fn resolve_ftd_foreign_variable(
+    variable: &str,
+    doc_name: &str,
+) -> ftd::ftd2021::p1::Result<ftd::Value> {
     match variable.strip_prefix("fastn/time#") {
         Some("now-str") => Ok(ftd::Value::String {
             text: std::str::from_utf8(
@@ -840,16 +881,16 @@ fn resolve_ftd_foreign_variable(variable: &str, doc_name: &str) -> ftd::p1::Resu
             .to_string(),
             source: ftd::TextSource::Header,
         }),
-        _ => ftd::p2::utils::e2(format!("{} not found 3", variable).as_str(), doc_name, 0),
+        _ => ftd::ftd2021::p2::utils::e2(format!("{} not found 3", variable).as_str(), doc_name, 0),
     }
 }
 
 fn resolve_ftd_foreign_variable_2022(
     variable: &str,
     doc_name: &str,
-) -> ftd::p1::Result<ftd::interpreter2::Value> {
+) -> ftd::ftd2021::p1::Result<ftd::interpreter::Value> {
     match variable.strip_prefix("fastn/time#") {
-        Some("now-str") => Ok(ftd::interpreter2::Value::String {
+        Some("now-str") => Ok(ftd::interpreter::Value::String {
             text: std::str::from_utf8(
                 std::process::Command::new("date")
                     .output()
@@ -860,6 +901,6 @@ fn resolve_ftd_foreign_variable_2022(
             .unwrap()
             .to_string(),
         }),
-        _ => ftd::p2::utils::e2(format!("{} not found 3", variable).as_str(), doc_name, 0),
+        _ => ftd::ftd2021::p2::utils::e2(format!("{} not found 3", variable).as_str(), doc_name, 0),
     }
 }

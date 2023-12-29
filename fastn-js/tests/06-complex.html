@@ -1,0 +1,79 @@
+<html>
+<head>
+    <script src="../js/dom.js"></script>
+    <script src="../js/fastn.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/virtual.js"></script>
+    <script src="../js/ftd.js"></script>
+    <script src="../js/postInit.js"></script>
+</head>
+<body></body>
+<script>
+    (function() {
+        function main (root) {
+            let x = fastn.mutable(10);
+            let y = 20;
+            let z = fastn.formula([x], function () { return x.get() * y; });
+
+            foo(root, x);
+
+            let x_value = fastn.mutable(1000);
+            let x_ = fastn.proxy(
+                [x, x_value],
+                function () {
+                    if (x.get() % 2 === 0) { return x_value } else { return x }
+                },
+            );
+            foo(root, x_);
+
+            let i = fastn_dom.createKernel(root, fastn_dom.ElementKind.Integer);
+            i.setProperty(fastn_dom.PropertyKind.IntegerValue, z);
+        }
+
+        function foo(root, x) {
+            let i = fastn_dom.createKernel(root, fastn_dom.ElementKind.Integer);
+            i.setDynamicProperty(fastn_dom.PropertyKind.IntegerValue, [x], function () { return x.get() + 20; });
+            i.setStaticProperty(fastn_dom.PropertyKind.Color, fastn.recordInstance({
+                dark: "red",
+                light: "red"
+            }));
+            i.addEventHandler(fastn_dom.Event.Click, function () {
+                x.set(x.get() + 1);
+            });
+        }
+
+        document.body.innerHTML = fastnVirtual.ssr(main);
+        fastnVirtual.doubleBuffer(main);
+    })();
+</script>
+</html>
+
+
+<!--
+-- integer $x: 10
+-- integer y: 20
+-- integer z: { x * y }
+
+
+-- foo:
+$x: $x
+
+-- foo:
+$x: {
+    if { x % 2 == 0 }: 1000
+    else: $x
+}
+
+-- ftd.integer: $z
+
+
+
+-- component foo:
+integer $x:
+
+-- ftd.integer: { foo.x + 20 }
+color: red
+$on-click$: { foo.x += 1 }
+
+-- end: foo
+-->

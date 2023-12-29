@@ -11,7 +11,8 @@
           },
           "mutable": false,
           "value": null,
-          "line_number": 2
+          "line_number": 2,
+          "access_modifier": "Public"
         }
       ],
       "definition": {
@@ -19,22 +20,22 @@
         "properties": [
           {
             "value": {
-              "String": {
+              "string-value": {
                 "value": "$name",
-                "line_number": 7,
+                "line-number": 7,
                 "source": "Body"
               }
             },
             "source": "Body",
             "condition": null,
-            "line_number": 7
+            "line-number": 7
           }
         ],
         "iteration": null,
         "condition": null,
         "events": [],
         "children": [],
-        "line_number": 4
+        "line-number": 4
       },
       "css": null,
       "line_number": 1

@@ -2,57 +2,38 @@
 
 extern crate self as ftd;
 
-#[cfg(test)]
-#[macro_use]
-pub(crate) mod test;
-
-pub mod ast;
-pub mod code;
-mod component;
-mod condition;
-mod constants;
-mod di;
-mod dnode;
-pub mod evalexpr;
-mod event;
-mod execute_doc;
-pub mod executor;
-mod html;
-pub mod html1;
-pub mod interpreter;
-pub mod interpreter2;
-pub mod markup;
-pub mod node;
-mod or_type;
-pub mod p1;
-pub mod p11;
-pub mod p2;
-pub(crate) mod rendered;
-mod rt;
-mod ui;
-mod value_with_default;
-pub(crate) mod variable;
-mod youtube_id;
-
-pub use component::{ChildComponent, Component, Instruction};
-pub use condition::Condition;
-pub use constants::{identifier, regex};
-pub use event::{Action, Event};
-pub use ftd::{
-    ftd::p2::interpreter::{interpret, Interpreter, InterpreterState, ParsedDocument},
-    value_with_default::ValueWithDefault,
-};
-pub use html::{anchor, color, length, overflow, Collector, Node, StyleSpec};
-pub use or_type::OrType;
-pub use rendered::Rendered;
-pub use rt::RT;
-pub use ui::{
+pub use ftd2021::component::{ChildComponent, Component, Instruction};
+pub use ftd2021::condition::Condition;
+pub use ftd2021::constants::{identifier, regex};
+pub use ftd2021::event::{Action, Event};
+pub use ftd2021::html::{anchor, color, length, overflow, Collector, Node, StyleSpec};
+pub use ftd2021::ui::{
     Anchor, AttributeType, Code, Color, ColorValue, Column, Common, ConditionalAttribute,
     ConditionalValue, Container, Element, FontDisplay, GradientDirection, Grid, IFrame, IText,
     Image, ImageSrc, Input, Length, Loading, Markup, Markups, NamedFont, Overflow, Position,
     Region, Row, Scene, Spacing, Style, Text, TextAlign, TextBlock, TextFormat, Type, Weight,
 };
-pub use variable::{PropertyValue, TextSource, Value, Variable, VariableFlags};
+pub use ftd2021::value_with_default::ValueWithDefault;
+pub use ftd2021::variable::{PropertyValue, TextSource, Value, Variable, VariableFlags};
+
+pub mod ast;
+pub mod executor;
+pub mod ftd2021;
+pub mod html;
+pub mod interpreter;
+pub mod js;
+pub mod node;
+pub mod p1;
+#[cfg(feature = "native-rendering")]
+pub mod taffy;
+#[cfg(feature = "terminal")]
+pub mod terminal;
+pub mod test_helper;
+mod utils;
+#[cfg(feature = "native-rendering")]
+mod wasm;
+
+pub const PROCESSOR_MARKER: &str = "$processor$";
 
 pub fn css() -> &'static str {
     // if fastn_core::utils::is_test() {
@@ -60,6 +41,61 @@ pub fn css() -> &'static str {
     // }
 
     include_str!("../ftd.css")
+}
+
+static THEME_CSS_DIR: include_dir::Dir<'_> =
+    include_dir::include_dir!("$CARGO_MANIFEST_DIR/theme_css");
+
+pub fn theme_css() -> ftd::Map<String> {
+    let mut themes: ftd::Map<String> = Default::default();
+    // let paths = ftd::utils::find_all_files_matching_extension_recursively("theme_css", "css");
+    for file in THEME_CSS_DIR.files() {
+        let stem = file.path().file_stem().unwrap().to_str().unwrap();
+        themes.insert(stem.to_string(), file.contents_utf8().unwrap().to_string());
+    }
+    themes
+}
+
+pub fn ftd_js_css() -> &'static str {
+    include_str!("../ftd-js.css")
+}
+
+pub fn markdown_js() -> &'static str {
+    fastn_js::markdown_js()
+}
+
+pub fn prism_css() -> String {
+    let prism_line_highlight = include_str!("../prism/prism-line-highlight.css");
+    let prism_line_numbers = include_str!("../prism/prism-line-numbers.css");
+    format!("{prism_line_highlight}{prism_line_numbers}")
+}
+
+pub fn prism_js() -> String {
+    let prism = include_str!("../prism/prism.js");
+    let prism_line_highlight = include_str!("../prism/prism-line-highlight.js");
+    let prism_line_numbers = include_str!("../prism/prism-line-numbers.js");
+
+    // Languages supported
+    // Rust, Json, Python, Markdown, SQL, Bash, JavaScript
+    let prism_rust = include_str!("../prism/prism-rust.js");
+    let prism_json = include_str!("../prism/prism-json.js");
+    let prism_python = include_str!("../prism/prism-python.js");
+    let prism_markdown = include_str!("../prism/prism-markdown.js");
+    let prism_sql = include_str!("../prism/prism-sql.js");
+    let prism_bash = include_str!("../prism/prism-bash.js");
+    let prism_javascript = include_str!("../prism/prism-javascript.js");
+
+    format!(
+        "{prism}{prism_line_highlight}{prism_line_numbers}{prism_rust}{prism_json}{prism_python\
+        }{prism_markdown}{prism_sql}{prism_bash}{prism_javascript}"
+    )
+}
+
+pub fn terminal() -> &'static str {
+    include_str!("../terminal.ftd")
+}
+pub fn taffy() -> &'static str {
+    include_str!("../taffy.ftd")
 }
 
 pub fn build_js() -> &'static str {
@@ -271,7 +307,7 @@ impl ExampleLibrary {
         global_ids
     }
 
-    pub fn get(&self, name: &str, _doc: &ftd::p2::TDoc) -> Option<String> {
+    pub fn get(&self, name: &str, _doc: &ftd2021::p2::TDoc) -> Option<String> {
         std::fs::read_to_string(format!("./ftd/examples/{}.ftd", name)).ok()
     }
 
@@ -281,9 +317,9 @@ impl ExampleLibrary {
     /// for more details
     /// visit www.fpm.dev/glossary/#lazy-processor
     pub fn is_lazy_processor(
-        section: &ftd::p1::Section,
-        doc: &ftd::p2::TDoc,
-    ) -> ftd::p1::Result<bool> {
+        section: &ftd2021::p1::Section,
+        doc: &ftd2021::p2::TDoc,
+    ) -> ftd2021::p1::Result<bool> {
         Ok(section
             .header
             .str(doc.name, section.line_number, "$processor$")?
@@ -292,20 +328,24 @@ impl ExampleLibrary {
 
     pub fn process(
         &self,
-        section: &ftd::p1::Section,
-        doc: &ftd::p2::TDoc,
-    ) -> ftd::p1::Result<ftd::Value> {
-        ftd::p2::utils::unknown_processor_error(
+        section: &ftd2021::p1::Section,
+        doc: &ftd2021::p2::TDoc,
+    ) -> ftd2021::p1::Result<ftd::Value> {
+        ftd2021::p2::utils::unknown_processor_error(
             format!("unimplemented for section {:?} and doc {:?}", section, doc),
             doc.name.to_string(),
             section.line_number,
         )
     }
 
-    pub fn get_with_result(&self, name: &str, doc: &ftd::p2::TDoc) -> ftd::p1::Result<String> {
+    pub fn get_with_result(
+        &self,
+        name: &str,
+        doc: &ftd2021::p2::TDoc,
+    ) -> ftd2021::p1::Result<String> {
         match self.get(name, doc) {
             Some(v) => Ok(v),
-            None => ftd::p2::utils::e2(format!("library not found: {}", name), "", 0),
+            None => ftd2021::p2::utils::e2(format!("library not found: {}", name), "", 0),
         }
     }
 }

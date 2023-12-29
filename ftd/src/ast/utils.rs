@@ -26,6 +26,8 @@ pub fn get_import_alias(input: &str) -> (String, String) {
 
 pub(crate) fn is_variable_mutable(name: &str) -> bool {
     name.starts_with(REFERENCE)
+        && !name.eq(ftd::ast::utils::PROCESSOR)
+        && !name.eq(ftd::ast::utils::LOOP)
 }
 
 pub(crate) fn is_condition(value: &str, kind: &Option<String>) -> bool {
@@ -33,7 +35,7 @@ pub(crate) fn is_condition(value: &str, kind: &Option<String>) -> bool {
 }
 
 pub(crate) fn get_js_and_fields_from_headers(
-    headers: &ftd::p11::Headers,
+    headers: &ftd::p1::Headers,
     doc_id: &str,
 ) -> ftd::ast::Result<(Option<String>, Vec<ftd::ast::Argument>)> {
     let mut fields: Vec<ftd::ast::Argument> = Default::default();
@@ -53,7 +55,7 @@ pub(crate) fn get_js_and_fields_from_headers(
 }
 
 pub(crate) fn get_css_and_fields_from_headers(
-    headers: &ftd::p11::Headers,
+    headers: &ftd::p1::Headers,
     doc_id: &str,
 ) -> ftd::ast::Result<(Option<String>, Vec<ftd::ast::Argument>)> {
     let mut fields: Vec<ftd::ast::Argument> = Default::default();
@@ -76,5 +78,7 @@ pub const REFERENCE: &str = "$";
 pub const CLONE: &str = "*$";
 pub const LOOP: &str = "$loop$";
 pub const AS: &str = " as ";
+pub const IN: &str = " in ";
 pub const IF: &str = "if";
+pub const FOR: &str = "for";
 pub const PROCESSOR: &str = "$processor$";

@@ -1,19 +1,37 @@
 #[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
+// #[serde(tag = "ast-type", content = "c")]
 pub enum AST {
+    #[serde(rename = "import")]
     Import(ftd::ast::Import),
+    #[serde(rename = "record")]
     Record(ftd::ast::Record),
+    #[serde(rename = "or-type")]
     OrType(ftd::ast::OrType),
     VariableDefinition(ftd::ast::VariableDefinition),
     VariableInvocation(ftd::ast::VariableInvocation),
     ComponentDefinition(ftd::ast::ComponentDefinition),
+    #[serde(rename = "component-invocation")]
     ComponentInvocation(ftd::ast::Component),
     FunctionDefinition(ftd::ast::Function),
     WebComponentDefinition(ftd::ast::WebComponentDefinition),
 }
 
+// -- foo:
+
+// -- component foo:
+// -- ftd.text: hello
+// -- end: foo
+
+// -- integer x(a,b):
+// a + b
+
+// ->
+
+// -- ftd.text: hello
+
 impl AST {
     pub fn from_sections(
-        sections: &[ftd::p11::Section],
+        sections: &[ftd::p1::Section],
         doc_id: &str,
     ) -> ftd::ast::Result<Vec<AST>> {
         let mut di_vec = vec![];
@@ -37,7 +55,7 @@ impl AST {
         }
     }
 
-    pub fn from_section(section: &ftd::p11::Section, doc_id: &str) -> ftd::ast::Result<AST> {
+    pub fn from_section(section: &ftd::p1::Section, doc_id: &str) -> ftd::ast::Result<AST> {
         Ok(if ftd::ast::Import::is_import(section) {
             AST::Import(ftd::ast::Import::from_p1(section, doc_id)?)
         } else if ftd::ast::Record::is_record(section) {
@@ -214,6 +232,18 @@ impl AST {
     pub fn is_component(&self) -> bool {
         matches!(self, AST::ComponentInvocation(_))
     }
+
+    pub fn is_always_included_variable_definition(&self) -> bool {
+        matches!(
+            self,
+            AST::VariableDefinition(ftd::ast::VariableDefinition {
+                flags: ftd::ast::VariableFlags {
+                    always_include: Some(true)
+                },
+                ..
+            })
+        )
+    }
 }
 
 /// Filters out commented parts from the parsed document.
@@ -234,16 +264,16 @@ impl AST {
 /// Only '/' comments are ignored here.
 /// ';' comments are ignored inside the [`parser`] itself.
 ///
-/// uses [`Section::remove_comments()`] and [`Subsection::remove_comments()`] to remove comments
-/// in sections and subsections accordingly.
+/// uses [`Section::remove_comments()`] and [`SubSection::remove_comments()`] to remove comments
+/// in sections and sub_sections accordingly.
 ///
 /// [`parser`]: ftd::p1::parser::parse
 /// [`Section::remove_comments()`]: ftd::p1::section::Section::remove_comments
 /// [`SubSection::remove_comments()`]: ftd::p1::sub_section::SubSection::remove_comments
-fn ignore_comments(sections: &[ftd::p11::Section]) -> Vec<ftd::p11::Section> {
+fn ignore_comments(sections: &[ftd::p1::Section]) -> Vec<ftd::p1::Section> {
     // TODO: AST should contain the commented elements. Comments should not be ignored while creating AST.
     sections
         .iter()
         .filter_map(|s| s.remove_comments())
-        .collect::<Vec<ftd::p11::Section>>()
+        .collect::<Vec<ftd::p1::Section>>()
 }

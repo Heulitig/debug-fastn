@@ -1,22 +1,63 @@
-mod main;
-mod tdoc;
-mod test;
-mod things;
-pub(crate) mod utils;
+#[macro_export]
+macro_rules! try_ok_state {
+    ($e:expr) => {
+        match $e {
+            $crate::interpreter::StateWithThing::State(s) => {
+                return Ok($crate::interpreter::StateWithThing::new_state(s))
+            }
+            $crate::interpreter::StateWithThing::Continue => {
+                return Ok($crate::interpreter::StateWithThing::new_continue())
+            }
+            $crate::interpreter::StateWithThing::Thing(t) => t,
+        }
+    };
+}
 
-pub use main::{interpret, Document, Interpreter};
-pub(crate) use tdoc::TDoc;
-pub use things::expression::Boolean;
-pub use things::kind::{Kind, KindData};
-pub use things::property_value::PropertyValue;
-pub use things::property_value::Value;
-pub use things::variable::Variable;
-pub use things::Thing;
+#[macro_export]
+macro_rules! try_state {
+    ($e:expr) => {
+        match $e {
+            $crate::interpreter::StateWithThing::State(s) => {
+                return $crate::interpreter::StateWithThing::new_state(s)
+            }
+            $crate::interpreter::StateWithThing::Continue => {
+                return $crate::interpreter::StateWithThing::new_continue()
+            }
+            $crate::interpreter::StateWithThing::Thing(t) => t,
+        }
+    };
+}
+
+#[cfg(test)]
+#[macro_use]
+mod test;
+mod constants;
+mod main;
+pub mod prelude;
+mod tdoc;
+mod things;
+pub mod utils;
+pub use prelude::*;
+
+pub use tdoc::{BagOrState, TDoc};
+pub use things::expression;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("OtherError: {}", _0)]
+    OtherError(String),
+
     #[error("P1Error: {}", _0)]
-    P1Error(#[from] ftd::p11::Error),
+    P1Error(#[from] ftd::p1::Error),
+
+    #[error("IOError: {}", _0)]
+    IOError(#[from] std::io::Error),
+
+    #[error("OldP1Error: {}", _0)]
+    OldP1Error(#[from] ftd::ftd2021::p1::Error),
+
+    #[error("ASTError: {}", _0)]
+    ASTError(#[from] ftd::ast::Error),
 
     #[error("InvalidKind: {doc_id}:{line_number} -> {message}")]
     InvalidKind {
@@ -47,6 +88,25 @@ pub enum Error {
         doc_id: String,
         line_number: usize,
     },
+
+    #[error("InterpreterIOError: {io_error}, path: {path}")]
+    InterpreterIOError {
+        io_error: std::io::Error,
+        path: String,
+    },
+
+    #[error("EvalexprError: {}", _0)]
+    EvalexprError(#[from] fastn_grammar::evalexpr::EvalexprError),
+
+    #[error("serde error: {source}")]
+    Serde {
+        #[from]
+        source: serde_json::Error,
+    },
+
+    #[error("Invalid access: {message}, line_number: {line_number}")]
+    InvalidAccessError { message: String, line_number: usize },
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+pub type ModuleThing = ftd::interpreter::things::ModuleThing;

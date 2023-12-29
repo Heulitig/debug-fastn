@@ -5,12 +5,13 @@ pub struct NodeData {
     pub name: String,
     pub node: ftd::node::Node,
     pub html_data: ftd::node::HTMLData,
-    pub bag: ftd::Map<ftd::interpreter2::Thing>,
+    pub bag: indexmap::IndexMap<String, ftd::interpreter::Thing>,
     pub aliases: ftd::Map<String>,
     pub dummy_nodes: ftd::VecMap<ftd::node::DummyNode>,
     pub raw_nodes: ftd::Map<ftd::node::RawNode>,
     pub js: std::collections::HashSet<String>,
     pub css: std::collections::HashSet<String>,
+    pub rive_data: Vec<ftd::executor::RiveData>,
 }
 
 impl NodeData {
@@ -33,6 +34,7 @@ impl NodeData {
             raw_nodes: raw_node,
             js: rt.js,
             css: rt.css,
+            rive_data: rt.rive_data,
         }
     }
 }

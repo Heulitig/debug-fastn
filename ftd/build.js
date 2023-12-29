@@ -63,11 +63,13 @@ window.ftd = (function () {
         }
     }
     exports.handle_event = function (evt, id, event, obj) {
+        window.ftd.utils.reset_full_height();
         console_log(id, event);
         let actions = JSON.parse(event);
         for (const action in actions) {
             handle_event(evt, id, actions[action], obj);
         }
+        window.ftd.utils.set_full_height();
     };
     exports.handle_function = function (evt, id, event, obj) {
         console_log(id, event);
@@ -331,6 +333,9 @@ window.ftd = (function () {
     };
     // source: https://stackoverflow.com/questions/400212/ (cc-by-sa)
     exports.copy_to_clipboard = function (text) {
+        if (text.startsWith("\\", 0)) {
+            text = text.substring(1);
+        }
         if (!navigator.clipboard) {
             fallbackCopyTextToClipboard(text);
             return;
@@ -340,6 +345,60 @@ window.ftd = (function () {
         }, function (err) {
             console.error('Async: Could not copy text: ', err);
         });
+    };
+    exports.set_rive_boolean = function (canva_id, input, value, args, data, id) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const bumpTrigger = inputs.find(i => i.name === input);
+        bumpTrigger.value = value;
+    };
+    exports.toggle_rive_boolean = function (canva_id, input, args, data, id) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const trigger = inputs.find(i => i.name === input);
+        trigger.value = !trigger.value;
+    };
+    exports.set_rive_integer = function (canva_id, input, value, args, data, id) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const bumpTrigger = inputs.find(i => i.name === input);
+        bumpTrigger.value = value;
+    };
+    exports.fire_rive = function (canva_id, input, args, data, id) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const bumpTrigger = inputs.find(i => i.name === input);
+        bumpTrigger.fire();
+    };
+    exports.play_rive = function (canva_id, input, args, data, id) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        window[rive_const].play(input);
+    };
+    exports.pause_rive = function (canva_id, input, args, data, id) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        window[rive_const].pause(input);
+    };
+    exports.toggle_play_rive = function (canva_id, input, args, data, id) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        let r = window[rive_const];
+        r.playingAnimationNames.includes(input)
+            ? r.pause(input)
+            : r.play(input);
     };
     exports.component_data = function (component) {
         let data = {};
@@ -641,8 +700,10 @@ window.ftd.post_init = function () {
     }
     initialise_dark_mode();
     initialise_device();
+    window.ftd.utils.set_full_height();
     // update_markdown_colors();
 };
+const DEVICE_SUFFIX = "____device";
 function console_log(...message) {
     if (true) { // false
         console.log(...message);
@@ -798,7 +859,7 @@ function len(data) {
     return data.length;
 }
 function fallbackCopyTextToClipboard(text) {
-    var textArea = document.createElement("textarea");
+    const textArea = document.createElement("textarea");
     textArea.value = text;
     // Avoid scrolling to bottom
     textArea.style.top = "0";
@@ -808,12 +869,225 @@ function fallbackCopyTextToClipboard(text) {
     textArea.focus();
     textArea.select();
     try {
-        var successful = document.execCommand('copy');
-        var msg = successful ? 'successful' : 'unsuccessful';
+        const successful = document.execCommand('copy');
+        const msg = successful ? 'successful' : 'unsuccessful';
         console.log('Fallback: Copying text command was ' + msg);
     }
     catch (err) {
         console.error('Fallback: Oops, unable to copy', err);
     }
-    document.body.removeChild(textArea);
+    textArea.remove();
+}
+window.ftd.utils = {};
+window.ftd.utils.set_full_height = function () {
+    document.body.style.height = `max(${document.documentElement.scrollHeight}px, 100%)`;
+};
+window.ftd.utils.reset_full_height = function () {
+    document.body.style.height = `100%`;
+};
+window.ftd.utils.get_event_key = function (event) {
+    if (65 <= event.keyCode && event.keyCode <= 90) {
+        return String.fromCharCode(event.keyCode).toLowerCase();
+    }
+    else {
+        return event.key;
+    }
+};
+window.ftd.utils.function_name_to_js_function = function (s) {
+    let new_string = s;
+    let startsWithDigit = /^\d/.test(s);
+    if (startsWithDigit) {
+        new_string = "_" + s;
+    }
+    new_string = new_string.replace('#', "__").replace('-', "_")
+        .replace(':', "___")
+        .replace(',', "$")
+        .replace("\\\\", "/")
+        .replace('\\', "/")
+        .replace('/', "_").replace('.', "_");
+    return new_string;
+};
+window.ftd.utils.node_change_call = function (id, key, data) {
+    const node_function = `node_change_${id}`;
+    const target = window[node_function];
+    if (!!target && !!target[key]) {
+        target[key](data);
+    }
+};
+window.ftd.utils.set_value_helper = function (data, key, remaining, new_value) {
+    if (!!remaining) {
+        set_data_value(data, `${key}.${remaining}`, new_value);
+    }
+    else {
+        set_data_value(data, key, new_value);
+    }
+};
+window.ftd.dependencies = {};
+window.ftd.dependencies.eval_background_size = function (bg) {
+    if (typeof bg === 'object' && !!bg && "size" in bg) {
+        let sz = bg.size;
+        if (typeof sz === 'object' && !!sz && "x" in sz && "y" in sz) {
+            return `${sz.x} ${sz.y}`;
+        }
+        else {
+            return sz;
+        }
+    }
+    else {
+        return null;
+    }
+};
+window.ftd.dependencies.eval_background_position = function (bg) {
+    if (typeof bg === 'object' && !!bg && "position" in bg) {
+        let pos = bg.position;
+        if (typeof pos === 'object' && !!pos && "x" in pos && "y" in pos) {
+            return `${pos.x} ${pos.y}`;
+        }
+        else {
+            return pos.replace("-", " ");
+        }
+    }
+    else {
+        return null;
+    }
+};
+window.ftd.dependencies.eval_background_repeat = function (bg) {
+    if (typeof bg === 'object' && !!bg && "repeat" in bg) {
+        return bg.repeat;
+    }
+    else {
+        return null;
+    }
+};
+window.ftd.dependencies.eval_background_color = function (bg, data) {
+    let img_src = bg;
+    if (!data["ftd#dark-mode"] && typeof img_src === 'object' && !!img_src && "light" in img_src) {
+        return img_src.light;
+    }
+    else if (data["ftd#dark-mode"] && typeof img_src === 'object' && !!img_src && "dark" in img_src) {
+        return img_src.dark;
+    }
+    else if (typeof img_src === 'string' && !!img_src) {
+        return img_src;
+    }
+    else {
+        return null;
+    }
+};
+window.ftd.dependencies.eval_background_image = function (bg, data) {
+    var _a;
+    if (typeof bg === 'object' && !!bg && "src" in bg) {
+        let img_src = bg.src;
+        if (!data["ftd#dark-mode"] && typeof img_src === 'object' && !!img_src && "light" in img_src) {
+            return `url("${img_src.light}")`;
+        }
+        else if (data["ftd#dark-mode"] && typeof img_src === 'object' && !!img_src && "dark" in img_src) {
+            return `url("${img_src.dark}")`;
+        }
+        else {
+            return null;
+        }
+    }
+    else if (typeof bg === 'object' && !!bg && "colors" in bg && Object.keys(bg.colors).length) {
+        let colors = "";
+        // if the bg direction is provided by the user, use it, otherwise default
+        let direction = (_a = bg.direction) !== null && _a !== void 0 ? _a : "to bottom";
+        let colors_vec = bg.colors;
+        for (const c of colors_vec) {
+            if (typeof c === 'object' && !!c && "color" in c) {
+                let color_value = c.color;
+                if (typeof color_value === 'object' && !!color_value && "light" in color_value && "dark" in color_value) {
+                    if (colors) {
+                        colors = data["ftd#dark-mode"] ? `${colors}, ${color_value.dark}` : `${colors}, ${color_value.light}`;
+                    }
+                    else {
+                        colors = data["ftd#dark-mode"] ? `${color_value.dark}` : `${color_value.light}`;
+                    }
+                    if ("start" in c)
+                        colors = `${colors} ${c.start}`;
+                    if ("end" in c)
+                        colors = `${colors} ${c.end}`;
+                    if ("stop-position" in c)
+                        colors = `${colors}, ${c["stop-position"]}`;
+                }
+            }
+        }
+        let res = `linear-gradient(${direction}, ${colors})`;
+        return res;
+    }
+    else {
+        return null;
+    }
+};
+window.ftd.dependencies.eval_box_shadow = function (shadow, data) {
+    if (typeof shadow === 'object' && !!shadow) {
+        let inset, blur, spread, x_off, y_off, color;
+        inset = "";
+        blur = spread = x_off = y_off = "0px";
+        color = "black";
+        if (("inset" in shadow) && shadow.inset)
+            inset = "inset";
+        if ("blur" in shadow)
+            blur = shadow.blur;
+        if ("spread" in shadow)
+            spread = shadow.spread;
+        if ("x-offset" in shadow)
+            x_off = shadow["x-offset"];
+        if ("y-offset" in shadow)
+            y_off = shadow["y-offset"];
+        if ("color" in shadow) {
+            if (data["ftd#dark-mode"]) {
+                color = shadow.color.dark;
+            }
+            else {
+                color = shadow.color.light;
+            }
+        }
+        // inset, color, x_offset, y_offset, blur, spread
+        let res = `${inset} ${color} ${x_off} ${y_off} ${blur} ${spread}`.trim();
+        return res;
+    }
+    else {
+        return null;
+    }
+};
+window.ftd.utils.add_extra_in_id = function (node_id) {
+    let element = document.querySelector(`[data-id=\"${node_id}\"]`);
+    if (element) {
+        changeElementId(element, DEVICE_SUFFIX, true);
+    }
+};
+window.ftd.utils.remove_extra_from_id = function (node_id) {
+    let element = document.querySelector(`[data-id=\"${node_id}\"]`);
+    if (element) {
+        changeElementId(element, DEVICE_SUFFIX, false);
+    }
+};
+function changeElementId(element, suffix, add) {
+    // check if the current ID is not empty
+    if (element.id) {
+        // set the new ID for the element
+        element.id = updatedID(element.id, add, suffix);
+    }
+    // get all the children nodes of the element
+    // @ts-ignore
+    const childrenNodes = element.children;
+    // loop through all the children nodes
+    for (let i = 0; i < childrenNodes.length; i++) {
+        // get the current child node
+        const currentNode = childrenNodes[i];
+        // recursively call this function for the current child node
+        changeElementId(currentNode, suffix, add);
+    }
+}
+function updatedID(str, flag, suffix) {
+    // check if the flag is set
+    if (flag) {
+        // append suffix to the string
+        return `${str} ${suffix}`;
+    }
+    else {
+        // remove suffix from the string (if it exists)
+        return str.replace(suffix, "");
+    }
 }

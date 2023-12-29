@@ -2,6 +2,7 @@
 pub enum Element {
     Row(Row),
     Column(Column),
+    Container(ContainerElement),
     Document(Document),
     Text(Text),
     Integer(Text),
@@ -15,6 +16,7 @@ pub enum Element {
     IterativeElement(IterativeElement),
     CheckBox(CheckBox),
     WebComponent(WebComponent),
+    Rive(Rive),
     Null { line_number: usize },
 }
 
@@ -23,6 +25,7 @@ impl Element {
         match self {
             Element::Row(r) => Some(&r.common),
             Element::Column(c) => Some(&c.common),
+            Element::Container(e) => Some(&e.common),
             Element::Text(t) => Some(&t.common),
             Element::Integer(i) => Some(&i.common),
             Element::Boolean(b) => Some(&b.common),
@@ -36,6 +39,7 @@ impl Element {
             Element::Null { .. } => None,
             Element::RawElement(_) => None,
             Element::WebComponent(_) => None,
+            Element::Rive(_) => None,
             Element::IterativeElement(i) => i.element.get_common(),
         }
     }
@@ -58,6 +62,7 @@ impl Element {
         match self {
             Element::Row(r) => r.common.line_number,
             Element::Column(c) => c.common.line_number,
+            Element::Container(e) => e.common.line_number,
             Element::Document(d) => d.line_number,
             Element::Text(t) => t.common.line_number,
             Element::Integer(i) => i.common.line_number,
@@ -71,6 +76,7 @@ impl Element {
             Element::IterativeElement(i) => i.iteration.line_number,
             Element::CheckBox(c) => c.common.line_number,
             Element::WebComponent(w) => w.line_number,
+            Element::Rive(r) => r.common.line_number,
             Element::Null { line_number } => *line_number,
         }
     }
@@ -79,8 +85,8 @@ impl Element {
 #[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
 pub struct RawElement {
     pub name: String,
-    pub properties: Vec<(String, ftd::interpreter2::Property)>,
-    pub condition: Option<ftd::interpreter2::Expression>,
+    pub properties: Vec<(String, ftd::interpreter::Property)>,
+    pub condition: Option<ftd::interpreter::Expression>,
     pub children: Vec<Element>,
     pub events: Vec<Event>,
     pub line_number: usize,
@@ -89,13 +95,14 @@ pub struct RawElement {
 #[derive(serde::Deserialize, Debug, PartialEq, Clone, serde::Serialize)]
 pub struct IterativeElement {
     pub element: Box<ftd::executor::Element>,
-    pub iteration: ftd::interpreter2::Loop,
+    pub iteration: ftd::interpreter::Loop,
 }
 
 #[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
 pub struct WebComponent {
     pub name: String,
-    pub properties: ftd::Map<ftd::interpreter2::PropertyValue>,
+    pub properties: ftd::Map<ftd::interpreter::PropertyValue>,
+    pub device: Option<ftd::executor::Device>,
     pub line_number: usize,
 }
 
@@ -112,18 +119,40 @@ pub struct Column {
 }
 
 #[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
+pub struct Rive {
+    pub src: ftd::executor::Value<String>,
+    pub canvas_width: ftd::executor::Value<Option<i64>>,
+    pub canvas_height: ftd::executor::Value<Option<i64>>,
+    pub state_machine: ftd::executor::Value<Vec<String>>,
+    pub autoplay: ftd::executor::Value<bool>,
+    pub artboard: ftd::executor::Value<Option<String>>,
+    pub common: Common,
+}
+
+#[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
+pub struct ContainerElement {
+    pub common: Common,
+    pub children: Vec<ftd::executor::Element>,
+    pub display: ftd::executor::Value<Option<ftd::executor::Display>>,
+}
+
+#[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
 pub struct HTMLData {
     pub title: ftd::executor::Value<Option<String>>,
     pub og_title: ftd::executor::Value<Option<String>>,
+    pub twitter_title: ftd::executor::Value<Option<String>>,
     pub description: ftd::executor::Value<Option<String>>,
     pub og_description: ftd::executor::Value<Option<String>>,
-    pub og_image: ftd::executor::Value<Option<ftd::executor::ImageSrc>>,
+    pub twitter_description: ftd::executor::Value<Option<String>>,
+    pub og_image: ftd::executor::Value<Option<ftd::executor::RawImage>>,
+    pub twitter_image: ftd::executor::Value<Option<ftd::executor::RawImage>>,
     pub theme_color: ftd::executor::Value<Option<ftd::executor::Color>>,
 }
 
 #[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
 pub struct Document {
     pub data: HTMLData,
+    pub breakpoint_width: ftd::executor::Value<Option<ftd::executor::BreakpointWidth>>,
     pub children: Vec<Element>,
     pub line_number: usize,
 }
@@ -136,6 +165,27 @@ pub struct Text {
     pub line_clamp: ftd::executor::Value<Option<i64>>,
     pub common: Common,
     pub style: ftd::executor::Value<Option<ftd::executor::TextStyle>>,
+    pub display: ftd::executor::Value<Option<ftd::executor::Display>>,
+}
+
+impl Text {
+    pub(crate) fn set_auto_id(&mut self) {
+        if self
+            .common
+            .region
+            .value
+            .as_ref()
+            .filter(|r| r.is_heading())
+            .is_some()
+            && self.common.id.value.is_none()
+        {
+            self.common.id = ftd::executor::Value::new(
+                Some(slug::slugify(self.text.value.original.as_str())),
+                Some(self.common.line_number),
+                vec![],
+            )
+        }
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Debug, Default, Clone)]
@@ -147,6 +197,8 @@ pub struct Rendered {
 #[derive(serde::Deserialize, Debug, PartialEq, Default, Clone, serde::Serialize)]
 pub struct Image {
     pub src: ftd::executor::Value<ImageSrc>,
+    pub alt: ftd::executor::Value<Option<String>>,
+    pub fit: ftd::executor::Value<Option<ftd::executor::ImageFit>>,
     pub common: Common,
 }
 
@@ -156,10 +208,11 @@ pub struct ImageSrc {
     pub dark: ftd::executor::Value<String>,
 }
 
+#[allow(dead_code)]
 impl ImageSrc {
     pub(crate) fn optional_image(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -173,7 +226,7 @@ impl ImageSrc {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_IMAGE_SRC,
+            ftd::interpreter::FTD_IMAGE_SRC,
             inherited_variables,
         )?;
 
@@ -185,7 +238,7 @@ impl ImageSrc {
     }
 
     fn from_optional_values(
-        or_type_value: Option<ftd::Map<ftd::interpreter2::PropertyValue>>,
+        or_type_value: Option<ftd::Map<ftd::interpreter::PropertyValue>>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<ImageSrc>> {
@@ -197,14 +250,14 @@ impl ImageSrc {
     }
 
     pub(crate) fn from_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ImageSrc> {
         let value = value.resolve(&doc.itdoc(), line_number)?;
         let fields = match value.inner() {
-            Some(ftd::interpreter2::Value::Record { name, fields })
-                if name.eq(ftd::interpreter2::FTD_IMAGE_SRC) =>
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_IMAGE_SRC) =>
             {
                 fields
             }
@@ -212,7 +265,7 @@ impl ImageSrc {
                 return ftd::executor::utils::parse_error(
                     format!(
                         "Expected value of type record `{}`, found: {:?}",
-                        ftd::interpreter2::FTD_IMAGE_SRC,
+                        ftd::interpreter::FTD_IMAGE_SRC,
                         t
                     ),
                     doc.name,
@@ -224,7 +277,7 @@ impl ImageSrc {
     }
 
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ImageSrc> {
@@ -242,7 +295,7 @@ impl ImageSrc {
                     .resolve(&doc.itdoc(), line_number)?
                     .string(doc.name, line_number)?,
                 Some(line_number),
-                vec![value.into_property(ftd::interpreter2::PropertySource::header("light"))],
+                vec![value.into_property(ftd::interpreter::PropertySource::header("light"))],
             )
         };
 
@@ -254,7 +307,7 @@ impl ImageSrc {
                         .resolve(&doc.itdoc(), line_number)?
                         .string(doc.name, line_number)?,
                     Some(line_number),
-                    vec![value.into_property(ftd::interpreter2::PropertySource::header("dark"))],
+                    vec![value.into_property(ftd::interpreter::PropertySource::header("dark"))],
                 )
             } else {
                 light.clone()
@@ -268,11 +321,92 @@ impl ImageSrc {
         (
             r#"
                 let c = {0};
-                if (typeof c === 'object' && "light" in c) {
+                if (typeof c === 'object' && !!c && "light" in c) {
                     if (data["ftd#dark-mode"] && "dark" in c){ c.dark } else { c.light }
                 } else {
                     c
                 }
+            "#
+            .to_string(),
+            true,
+        )
+    }
+}
+
+#[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
+pub struct RawImage {
+    pub src: ftd::executor::Value<String>,
+}
+
+impl RawImage {
+    pub(crate) fn optional_image(
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+        key: &str,
+        inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+        component_name: &str,
+    ) -> ftd::executor::Result<ftd::executor::Value<Option<RawImage>>> {
+        let record_values = ftd::executor::value::optional_record_inherited(
+            key,
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+            ftd::interpreter::FTD_RAW_IMAGE_SRC,
+            inherited_variables,
+        )?;
+
+        Ok(ftd::executor::Value::new(
+            RawImage::from_optional_values(record_values.value, doc, line_number)?,
+            record_values.line_number,
+            record_values.properties,
+        ))
+    }
+
+    fn from_optional_values(
+        or_type_value: Option<ftd::Map<ftd::interpreter::PropertyValue>>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Option<RawImage>> {
+        if let Some(value) = or_type_value {
+            Ok(Some(RawImage::from_values(value, doc, line_number)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn from_values(
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<RawImage> {
+        let src = {
+            let value = values.get("src").ok_or(ftd::executor::Error::ParseError {
+                message: "`src` field in ftd.raw-image-src not found".to_string(),
+                doc_id: doc.name.to_string(),
+                line_number,
+            })?;
+            ftd::executor::Value::new(
+                value
+                    .clone()
+                    .resolve(&doc.itdoc(), line_number)?
+                    .string(doc.name, line_number)?,
+                Some(line_number),
+                vec![value.into_property(ftd::interpreter::PropertySource::header("src"))],
+            )
+        };
+
+        Ok(RawImage { src })
+    }
+
+    pub fn image_pattern() -> (String, bool) {
+        (
+            r#"
+                let c = {0};
+                if (typeof c === 'object' && !!c && "src" in c) {c.src} else {c}
             "#
             .to_string(),
             true,
@@ -290,14 +424,15 @@ pub struct Code {
 
 #[allow(clippy::too_many_arguments)]
 pub fn code_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Code> {
     // TODO: `text`, `lang` and `theme` cannot have condition
 
@@ -359,6 +494,7 @@ pub fn code_from_properties(
         line_number,
         inherited_variables,
         "ftd#code",
+        device,
     )?;
 
     Ok(Code {
@@ -396,14 +532,15 @@ pub struct Iframe {
 
 #[allow(clippy::too_many_arguments)]
 pub fn iframe_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Iframe> {
     // TODO: `youtube` should not be conditional
     let srcdoc = ftd::executor::value::optional_string(
@@ -489,6 +626,7 @@ pub fn iframe_from_properties(
         line_number,
         inherited_variables,
         "ftd#iframe",
+        device,
     )?;
 
     Ok(Iframe {
@@ -528,12 +666,13 @@ pub fn code_with_theme(
 #[derive(serde::Deserialize, Debug, PartialEq, Default, Clone, serde::Serialize)]
 pub struct Container {
     pub wrap: ftd::executor::Value<Option<bool>>,
-    pub align_content: ftd::executor::Value<ftd::executor::Alignment>,
+    pub align_content: ftd::executor::Value<Option<ftd::executor::Alignment>>,
     pub spacing: ftd::executor::Value<Option<ftd::executor::Spacing>>,
     pub children: Vec<Element>,
+    pub device: Option<ftd::executor::Device>,
 }
 
-pub type Event = ftd::interpreter2::Event;
+pub type Event = ftd::interpreter::Event;
 
 #[derive(serde::Deserialize, Debug, PartialEq, Default, Clone, serde::Serialize)]
 pub struct Common {
@@ -565,7 +704,7 @@ pub struct Common {
     pub margin_bottom: ftd::executor::Value<Option<ftd::executor::Length>>,
     pub margin_horizontal: ftd::executor::Value<Option<ftd::executor::Length>>,
     pub margin_vertical: ftd::executor::Value<Option<ftd::executor::Length>>,
-    pub border_width: ftd::executor::Value<ftd::executor::Length>,
+    pub border_width: ftd::executor::Value<Option<ftd::executor::Length>>,
     pub border_radius: ftd::executor::Value<Option<ftd::executor::Length>>,
     pub border_color: ftd::executor::Value<Option<ftd::executor::Color>>,
     pub border_bottom_width: ftd::executor::Value<Option<ftd::executor::Length>>,
@@ -580,8 +719,8 @@ pub struct Common {
     pub border_top_right_radius: ftd::executor::Value<Option<ftd::executor::Length>>,
     pub border_bottom_left_radius: ftd::executor::Value<Option<ftd::executor::Length>>,
     pub border_bottom_right_radius: ftd::executor::Value<Option<ftd::executor::Length>>,
-    pub width: ftd::executor::Value<ftd::executor::Resizing>,
-    pub height: ftd::executor::Value<ftd::executor::Resizing>,
+    pub width: ftd::executor::Value<Option<ftd::executor::Resizing>>,
+    pub height: ftd::executor::Value<Option<ftd::executor::Resizing>>,
     pub min_width: ftd::executor::Value<Option<ftd::executor::Resizing>>,
     pub max_width: ftd::executor::Value<Option<ftd::executor::Resizing>>,
     pub min_height: ftd::executor::Value<Option<ftd::executor::Resizing>>,
@@ -593,10 +732,11 @@ pub struct Common {
     pub align_self: ftd::executor::Value<Option<ftd::executor::AlignSelf>>,
     pub data_id: String,
     pub line_number: usize,
-    pub condition: Option<ftd::interpreter2::Expression>,
+    pub condition: Option<ftd::interpreter::Expression>,
     pub overflow: ftd::executor::Value<Option<ftd::executor::Overflow>>,
     pub overflow_x: ftd::executor::Value<Option<ftd::executor::Overflow>>,
     pub overflow_y: ftd::executor::Value<Option<ftd::executor::Overflow>>,
+    pub opacity: ftd::executor::Value<Option<f64>>,
     pub resize: ftd::executor::Value<Option<ftd::executor::Resize>>,
     pub white_space: ftd::executor::Value<Option<ftd::executor::WhiteSpace>>,
     pub text_transform: ftd::executor::Value<Option<ftd::executor::TextTransform>>,
@@ -609,14 +749,23 @@ pub struct Common {
     pub border_style_top: ftd::executor::Value<Option<ftd::executor::BorderStyle>>,
     pub border_style_bottom: ftd::executor::Value<Option<ftd::executor::BorderStyle>>,
     pub shadow: ftd::executor::Value<Option<ftd::executor::Shadow>>,
+    pub device: Option<ftd::executor::Device>,
 }
 
 pub fn default_column() -> Column {
     ftd::executor::Column {
         container: Default::default(),
         common: ftd::executor::Common {
-            width: ftd::executor::Value::new(ftd::executor::Resizing::FillContainer, None, vec![]),
-            height: ftd::executor::Value::new(ftd::executor::Resizing::FillContainer, None, vec![]),
+            width: ftd::executor::Value::new(
+                Some(ftd::executor::Resizing::FillContainer),
+                None,
+                vec![],
+            ),
+            height: ftd::executor::Value::new(
+                Some(ftd::executor::Resizing::FillContainer),
+                None,
+                vec![],
+            ),
             ..Default::default()
         },
     }
@@ -624,15 +773,16 @@ pub fn default_column() -> Column {
 
 #[allow(clippy::too_many_arguments)]
 pub fn text_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     is_dummy: bool,
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Text> {
     let text = ftd::executor::value::dummy_optional_string(
         "text",
@@ -663,6 +813,7 @@ pub fn text_from_properties(
         line_number,
         inherited_variables,
         "ftd#text",
+        device,
     )?;
     Ok(Text {
         text,
@@ -703,19 +854,29 @@ pub fn text_from_properties(
             inherited_variables,
             "ftd#text",
         )?,
+        display: ftd::executor::Display::optional_display(
+            properties,
+            arguments,
+            doc,
+            line_number,
+            "display",
+            inherited_variables,
+            "ftd#text",
+        )?,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn integer_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Text> {
     let value = ftd::executor::value::i64(
         "value",
@@ -751,6 +912,7 @@ pub fn integer_from_properties(
         line_number,
         inherited_variables,
         "ftd#integer",
+        device,
     )?;
     Ok(Text {
         text,
@@ -791,19 +953,29 @@ pub fn integer_from_properties(
             inherited_variables,
             "ftd#integer",
         )?,
+        display: ftd::executor::Display::optional_display(
+            properties,
+            arguments,
+            doc,
+            line_number,
+            "display",
+            inherited_variables,
+            "ftd#integer",
+        )?,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn decimal_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Text> {
     let value = ftd::executor::value::f64(
         "value",
@@ -839,6 +1011,7 @@ pub fn decimal_from_properties(
         line_number,
         inherited_variables,
         "ftd#decimal",
+        device,
     )?;
     Ok(Text {
         text,
@@ -879,19 +1052,29 @@ pub fn decimal_from_properties(
             inherited_variables,
             "ftd#decimal",
         )?,
+        display: ftd::executor::Display::optional_display(
+            properties,
+            arguments,
+            doc,
+            line_number,
+            "display",
+            inherited_variables,
+            "ftd#decimal",
+        )?,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn boolean_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Text> {
     let value = ftd::executor::value::bool(
         "value",
@@ -912,6 +1095,7 @@ pub fn boolean_from_properties(
         line_number,
         inherited_variables,
         "ftd#boolean",
+        device,
     )?;
     Ok(Text {
         text,
@@ -952,19 +1136,29 @@ pub fn boolean_from_properties(
             inherited_variables,
             "ftd#boolean",
         )?,
+        display: ftd::executor::Display::optional_display(
+            properties,
+            arguments,
+            doc,
+            line_number,
+            "display",
+            inherited_variables,
+            "ftd#boolean",
+        )?,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn image_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Image> {
     let src = {
         let src = ftd::executor::value::record(
@@ -974,7 +1168,7 @@ pub fn image_from_properties(
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_IMAGE_SRC,
+            ftd::interpreter::FTD_IMAGE_SRC,
         )?;
         ftd::executor::Value::new(
             ImageSrc::from_values(src.value, doc, line_number)?,
@@ -982,6 +1176,25 @@ pub fn image_from_properties(
             src.properties,
         )
     };
+
+    let alt = ftd::executor::value::optional_string(
+        "alt",
+        "ftd#image",
+        properties,
+        arguments,
+        doc,
+        line_number,
+    )?;
+
+    let fit = ftd::executor::ImageFit::optional_image_fit(
+        properties,
+        arguments,
+        doc,
+        line_number,
+        "fit",
+        inherited_variables,
+        "ftd#image",
+    )?;
 
     let common = common_from_properties(
         properties,
@@ -993,21 +1206,28 @@ pub fn image_from_properties(
         line_number,
         inherited_variables,
         "ftd#image",
+        device,
     )?;
-    Ok(Image { src, common })
+    Ok(Image {
+        src,
+        alt,
+        fit,
+        common,
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn row_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     children: Vec<Element>,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Row> {
     let common = common_from_properties(
         properties,
@@ -1019,6 +1239,7 @@ pub fn row_from_properties(
         line_number,
         inherited_variables,
         "ftd#row",
+        device.clone(),
     )?;
     let container = container_from_properties(
         properties,
@@ -1028,21 +1249,23 @@ pub fn row_from_properties(
         children,
         inherited_variables,
         "ftd#row",
+        device,
     )?;
     Ok(Row { container, common })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn column_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     children: Vec<Element>,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Column> {
     let common = common_from_properties(
         properties,
@@ -1054,6 +1277,7 @@ pub fn column_from_properties(
         line_number,
         inherited_variables,
         "ftd#column",
+        device.clone(),
     )?;
     let container = container_from_properties(
         properties,
@@ -1063,18 +1287,172 @@ pub fn column_from_properties(
         children,
         inherited_variables,
         "ftd#column",
+        device,
     )?;
     Ok(Column { container, common })
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn container_element_from_properties(
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
+    doc: &mut ftd::executor::TDoc,
+    local_container: &[usize],
+    line_number: usize,
+    children: Vec<Element>,
+    inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
+) -> ftd::executor::Result<ContainerElement> {
+    let common = common_from_properties(
+        properties,
+        events,
+        arguments,
+        condition,
+        doc,
+        local_container,
+        line_number,
+        inherited_variables,
+        "ftd#container",
+        device,
+    )?;
+    Ok(ContainerElement {
+        common,
+        children,
+        display: ftd::executor::Display::optional_display(
+            properties,
+            arguments,
+            doc,
+            line_number,
+            "display",
+            inherited_variables,
+            "ftd#container",
+        )?,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn rive_from_properties(
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
+    doc: &mut ftd::executor::TDoc,
+    local_container: &[usize],
+    line_number: usize,
+    inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
+) -> ftd::executor::Result<Rive> {
+    let component_name = "ftd#rive";
+    let common = common_from_properties(
+        properties,
+        events,
+        arguments,
+        condition,
+        doc,
+        local_container,
+        line_number,
+        inherited_variables,
+        component_name,
+        device,
+    )?;
+    let rive = Rive {
+        src: ftd::executor::value::string(
+            "src",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+        )?,
+        canvas_width: ftd::executor::value::optional_i64(
+            "canvas-width",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+            inherited_variables,
+        )?,
+        canvas_height: ftd::executor::value::optional_i64(
+            "canvas-height",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+            inherited_variables,
+        )?,
+        state_machine: ftd::executor::value::string_list(
+            "state-machine",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+            inherited_variables,
+        )?,
+        autoplay: ftd::executor::value::bool(
+            "autoplay",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+        )?,
+        artboard: ftd::executor::value::optional_string(
+            "artboard",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+        )?,
+        common,
+    };
+
+    let id = rive
+        .common
+        .id
+        .value
+        .clone()
+        .ok_or(ftd::executor::Error::ParseError {
+            message: "id is required".to_string(),
+            doc_id: doc.name.to_string(),
+            line_number,
+        })?;
+
+    doc.rive_data.push(ftd::executor::RiveData {
+        id,
+        src: rive.src.value.to_string(),
+        state_machine: rive.state_machine.value.clone(),
+        artboard: rive.artboard.value.clone(),
+        autoplay: rive.autoplay.value,
+        events: events.to_vec(),
+    });
+
+    Ok(rive)
+}
+
 pub fn document_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    arguments: &[ftd::interpreter2::Argument],
+    properties: &[ftd::interpreter::Property],
+    arguments: &[ftd::interpreter::Argument],
     doc: &mut ftd::executor::TDoc,
     line_number: usize,
     children: Vec<Element>,
+    inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
 ) -> ftd::executor::Result<Document> {
     Ok(Document {
+        breakpoint_width: ftd::executor::BreakpointWidth::optional_breakpoint_width(
+            properties,
+            arguments,
+            doc,
+            line_number,
+            "breakpoint",
+            inherited_variables,
+            "ftd#document",
+        )?,
         data: html_data_from_properties(properties, arguments, doc, line_number, "ftd#document")?,
         children,
         line_number,
@@ -1083,8 +1461,8 @@ pub fn document_from_properties(
 
 #[allow(clippy::too_many_arguments)]
 pub fn html_data_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    arguments: &[ftd::interpreter2::Argument],
+    properties: &[ftd::interpreter::Property],
+    arguments: &[ftd::interpreter::Argument],
     doc: &mut ftd::executor::TDoc,
     line_number: usize,
     component_name: &str,
@@ -1100,6 +1478,14 @@ pub fn html_data_from_properties(
         )?,
         og_title: ftd::executor::value::optional_string(
             "og-title",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+        )?,
+        twitter_title: ftd::executor::value::optional_string(
+            "twitter-title",
             component_name,
             properties,
             arguments,
@@ -1122,12 +1508,29 @@ pub fn html_data_from_properties(
             doc,
             line_number,
         )?,
-        og_image: ftd::executor::ImageSrc::optional_image(
+        twitter_description: ftd::executor::value::optional_string(
+            "twitter-description",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+        )?,
+        og_image: ftd::executor::RawImage::optional_image(
             properties,
             arguments,
             doc,
             line_number,
             "og-image",
+            &Default::default(),
+            component_name,
+        )?,
+        twitter_image: ftd::executor::RawImage::optional_image(
+            properties,
+            arguments,
+            doc,
+            line_number,
+            "twitter-image",
             &Default::default(),
             component_name,
         )?,
@@ -1145,15 +1548,16 @@ pub fn html_data_from_properties(
 
 #[allow(clippy::too_many_arguments)]
 pub fn common_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
     component_name: &str,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Common> {
     let is_visible = if let Some(condition) = condition {
         condition.eval(&doc.itdoc())?
@@ -1163,7 +1567,7 @@ pub fn common_from_properties(
 
     doc.js.extend(
         ftd::executor::value::string_list(
-            "js-list",
+            "js",
             component_name,
             properties,
             arguments,
@@ -1173,23 +1577,10 @@ pub fn common_from_properties(
         )?
         .value,
     );
-
-    if let Some(js) = ftd::executor::value::optional_string(
-        "js",
-        component_name,
-        properties,
-        arguments,
-        doc,
-        line_number,
-    )?
-    .value
-    {
-        doc.js.insert(js);
-    }
 
     doc.css.extend(
         ftd::executor::value::string_list(
-            "css-list",
+            "css",
             component_name,
             properties,
             arguments,
@@ -1199,19 +1590,6 @@ pub fn common_from_properties(
         )?
         .value,
     );
-
-    if let Some(css) = ftd::executor::value::optional_string(
-        "css",
-        component_name,
-        properties,
-        arguments,
-        doc,
-        line_number,
-    )?
-    .value
-    {
-        doc.css.insert(css);
-    }
 
     Ok(Common {
         id: ftd::executor::value::optional_string(
@@ -1225,6 +1603,7 @@ pub fn common_from_properties(
         is_not_visible: !is_visible,
         event: events.to_owned(),
         is_dummy: false,
+        device,
         sticky: ftd::executor::value::optional_bool(
             "sticky",
             component_name,
@@ -1522,13 +1901,12 @@ pub fn common_from_properties(
             inherited_variables,
             component_name,
         )?,
-        border_width: ftd::executor::Length::length_with_default(
+        border_width: ftd::executor::Length::optional_length(
             properties,
             arguments,
             doc,
             line_number,
             "border-width",
-            ftd::executor::Length::Px(0),
             inherited_variables,
             component_name,
         )?,
@@ -1658,23 +2036,21 @@ pub fn common_from_properties(
             inherited_variables,
             component_name,
         )?,
-        width: ftd::executor::Resizing::resizing_with_default(
+        width: ftd::executor::Resizing::optional_resizing(
             properties,
             arguments,
             doc,
             line_number,
             "width",
-            ftd::executor::Resizing::default(),
             inherited_variables,
             component_name,
         )?,
-        height: ftd::executor::Resizing::resizing_with_default(
+        height: ftd::executor::Resizing::optional_resizing(
             properties,
             arguments,
             doc,
             line_number,
             "height",
-            ftd::executor::Resizing::default(),
             inherited_variables,
             component_name,
         )?,
@@ -1788,6 +2164,14 @@ pub fn common_from_properties(
             inherited_variables,
             component_name,
         )?,
+        opacity: ftd::executor::value::optional_f64(
+            "opacity",
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+        )?,
         resize: ftd::executor::Resize::optional_resize(
             properties,
             arguments,
@@ -1818,14 +2202,16 @@ pub fn common_from_properties(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn container_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    arguments: &[ftd::interpreter2::Argument],
+    properties: &[ftd::interpreter::Property],
+    arguments: &[ftd::interpreter::Argument],
     doc: &ftd::executor::TDoc,
     line_number: usize,
     children: Vec<Element>,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
     component_name: &str,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<Container> {
     Ok(Container {
         wrap: ftd::executor::value::optional_bool(
@@ -1837,13 +2223,12 @@ pub fn container_from_properties(
             line_number,
             inherited_variables,
         )?,
-        align_content: ftd::executor::Alignment::alignment_with_default(
+        align_content: ftd::executor::Alignment::optional_alignment(
             properties,
             arguments,
             doc,
             line_number,
             "align-content",
-            ftd::executor::Alignment::TopLeft,
             inherited_variables,
             component_name,
         )?,
@@ -1857,6 +2242,7 @@ pub fn container_from_properties(
             component_name,
         )?,
         children,
+        device,
     })
 }
 
@@ -1882,7 +2268,7 @@ impl TextInput {
                         \"\"
                     }}
                 "},
-                remove_key = ftd::interpreter2::FTD_REMOVE_KEY,
+                remove_key = ftd::interpreter::FTD_REMOVE_KEY,
             ),
             true,
         )
@@ -1891,14 +2277,15 @@ impl TextInput {
 
 #[allow(clippy::too_many_arguments)]
 pub fn text_input_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<TextInput> {
     // TODO: `youtube` should not be conditional
     let placeholder = ftd::executor::value::optional_string(
@@ -1968,6 +2355,7 @@ pub fn text_input_from_properties(
         line_number,
         inherited_variables,
         "ftd#text-input",
+        device,
     )?;
 
     Ok(TextInput {
@@ -1999,7 +2387,7 @@ impl CheckBox {
                         \"{remove_key}\"
                     }}
                 "},
-                remove_key = ftd::interpreter2::FTD_REMOVE_KEY,
+                remove_key = ftd::interpreter::FTD_REMOVE_KEY,
             ),
             true,
         )
@@ -2015,7 +2403,7 @@ impl CheckBox {
                         \"\"
                     }}
                 "},
-                remove_key = ftd::interpreter2::FTD_REMOVE_KEY,
+                remove_key = ftd::interpreter::FTD_REMOVE_KEY,
             ),
             true,
         )
@@ -2024,14 +2412,15 @@ impl CheckBox {
 
 #[allow(clippy::too_many_arguments)]
 pub fn checkbox_from_properties(
-    properties: &[ftd::interpreter2::Property],
-    events: &[ftd::interpreter2::Event],
-    arguments: &[ftd::interpreter2::Argument],
-    condition: &Option<ftd::interpreter2::Expression>,
+    properties: &[ftd::interpreter::Property],
+    events: &[ftd::interpreter::Event],
+    arguments: &[ftd::interpreter::Argument],
+    condition: &Option<ftd::interpreter::Expression>,
     doc: &mut ftd::executor::TDoc,
     local_container: &[usize],
     line_number: usize,
     inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+    device: Option<ftd::executor::Device>,
 ) -> ftd::executor::Result<CheckBox> {
     let checked = ftd::executor::value::optional_bool(
         "checked",
@@ -2063,6 +2452,7 @@ pub fn checkbox_from_properties(
         line_number,
         inherited_variables,
         "ftd#checkbox",
+        device,
     )?;
 
     Ok(CheckBox {

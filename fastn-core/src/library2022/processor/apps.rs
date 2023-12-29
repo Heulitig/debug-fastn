@@ -1,9 +1,9 @@
 pub fn process(
     value: ftd::ast::VariableValue,
-    kind: ftd::interpreter2::Kind,
-    doc: &ftd::interpreter2::TDoc,
-    config: &fastn_core::Config,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Value> {
+    kind: ftd::interpreter::Kind,
+    doc: &ftd::interpreter::TDoc,
+    req_config: &fastn_core::RequestConfig,
+) -> ftd::interpreter::Result<ftd::interpreter::Value> {
     use itertools::Itertools;
     #[derive(Debug, serde::Serialize)]
     struct UiApp {
@@ -14,7 +14,8 @@ pub fn process(
         icon: Option<ftd::ImageSrc>,
     }
 
-    let apps = config
+    let apps = req_config
+        .config
         .package
         .apps
         .iter()
@@ -27,5 +28,5 @@ pub fn process(
         .collect_vec();
 
     let installed_apps = fastn_core::ds::LengthList::from_owned(apps);
-    doc.from_json(&installed_apps, &kind, value.line_number())
+    doc.from_json(&installed_apps, &kind, &value)
 }

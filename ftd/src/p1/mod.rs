@@ -1,17 +1,25 @@
-mod header;
+#[cfg(test)]
+#[macro_use]
+mod test;
+
+pub(crate) mod header;
 mod parser;
 mod section;
-mod sub_section;
-mod to_string;
+pub mod utils;
 
-pub use header::Header;
-pub use parser::{parse, parse_file_for_global_ids};
+pub use header::{Header, Headers, Section as HSection, KV};
+pub use parser::{parse, parse_with_line_number};
+pub use section::Body;
 pub use section::Section;
-pub use sub_section::{SubSection, SubSections};
-pub use to_string::to_string;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("{doc_id}:{line_number} -> SectionNotFound")]
+    SectionNotFound { doc_id: String, line_number: usize },
+
+    #[error("{doc_id}:{line_number} -> MoreThanOneCaption")]
+    MoreThanOneCaption { doc_id: String, line_number: usize },
+
     #[error("{doc_id}:{line_number} -> {message}")]
     ParseError {
         message: String,
@@ -19,16 +27,16 @@ pub enum Error {
         line_number: usize,
     },
 
-    #[error("unknown data: {message}, line_number: {line_number}, doc: {doc_id}")]
-    UnknownData {
-        message: String,
+    #[error("{doc_id}:{line_number} -> MoreThanOneHeader for key {key}")]
+    MoreThanOneHeader {
+        key: String,
         doc_id: String,
         line_number: usize,
     },
 
-    #[error("missing data: {message}, line_number: {line_number}, doc: {doc_id}")]
-    MissingData {
-        message: String,
+    #[error("{doc_id}:{line_number} -> HeaderNotFound for key {key}")]
+    HeaderNotFound {
+        key: String,
         doc_id: String,
         line_number: usize,
     },

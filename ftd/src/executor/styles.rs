@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[derive(serde::Deserialize, Debug, PartialEq, Clone, serde::Serialize)]
 pub enum Length {
     Px(i64),
@@ -5,6 +7,8 @@ pub enum Length {
     Calc(String),
     Vh(f64),
     Vw(f64),
+    Vmin(f64),
+    Vmax(f64),
     Em(f64),
     Rem(f64),
     Responsive(Box<ResponsiveLength>),
@@ -18,7 +22,7 @@ impl Default for Length {
 
 impl Length {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Length>> {
@@ -30,7 +34,7 @@ impl Length {
     }
 
     fn from_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Length> {
@@ -40,62 +44,94 @@ impl Length {
         Length::from_values(value, doc, line_number)
     }
 
+    fn from_optional_value(
+        or_type_value: Option<ftd::interpreter::PropertyValue>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Option<Length>> {
+        if let Some(value) = or_type_value {
+            let binding = value.clone().resolve(&doc.itdoc(), line_number)?;
+            if let ftd::interpreter::Value::Optional { data, .. } = &binding {
+                if data.is_none() {
+                    return Ok(None);
+                }
+            }
+            return Ok(Some(Length::from_value(value, doc, line_number)?));
+        }
+        Ok(None)
+    }
+
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Length> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_LENGTH_PERCENT => Ok(Length::Percent(
+            ftd::interpreter::FTD_LENGTH_PERCENT => Ok(Length::Percent(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .decimal(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_LENGTH_PX => Ok(Length::Px(
+            ftd::interpreter::FTD_LENGTH_PX => Ok(Length::Px(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .integer(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_LENGTH_CALC => Ok(Length::Calc(
+            ftd::interpreter::FTD_LENGTH_CALC => Ok(Length::Calc(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .string(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_LENGTH_VH => Ok(Length::Vh(
+            ftd::interpreter::FTD_LENGTH_VH => Ok(Length::Vh(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .decimal(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_LENGTH_VW => Ok(Length::Vw(
+            ftd::interpreter::FTD_LENGTH_VW => Ok(Length::Vw(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .decimal(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_LENGTH_EM => Ok(Length::Em(
+            //
+            ftd::interpreter::FTD_LENGTH_VMIN => Ok(Length::Vmin(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .decimal(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_LENGTH_REM => Ok(Length::Rem(
+            ftd::interpreter::FTD_LENGTH_VMAX => Ok(Length::Vmax(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .decimal(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_LENGTH_RESPONSIVE => Ok(Length::Responsive(Box::new(
+            ftd::interpreter::FTD_LENGTH_EM => Ok(Length::Em(
+                or_type_value
+                    .1
+                    .clone()
+                    .resolve(&doc.itdoc(), line_number)?
+                    .decimal(doc.name, line_number)?,
+            )),
+            ftd::interpreter::FTD_LENGTH_REM => Ok(Length::Rem(
+                or_type_value
+                    .1
+                    .clone()
+                    .resolve(&doc.itdoc(), line_number)?
+                    .decimal(doc.name, line_number)?,
+            )),
+            ftd::interpreter::FTD_LENGTH_RESPONSIVE => Ok(Length::Responsive(Box::new(
                 ResponsiveLength::from_value(or_type_value.1.clone(), doc, line_number)?,
             ))),
             t => ftd::executor::utils::parse_error(
@@ -107,8 +143,8 @@ impl Length {
     }
 
     pub(crate) fn optional_length(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -122,7 +158,7 @@ impl Length {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_LENGTH,
+            ftd::interpreter::FTD_LENGTH,
             inherited_variables,
         )?;
 
@@ -133,45 +169,21 @@ impl Length {
         ))
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn length_with_default(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
-        doc: &ftd::executor::TDoc,
-        line_number: usize,
-        key: &str,
-        default: Length,
-        inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
-        component_name: &str,
-    ) -> ftd::executor::Result<ftd::executor::Value<Length>> {
-        let or_type_value = ftd::executor::value::optional_or_type(
-            key,
-            component_name,
-            properties,
-            arguments,
-            doc,
-            line_number,
-            ftd::interpreter2::FTD_LENGTH,
-            inherited_variables,
-        )?;
-
-        Ok(ftd::executor::Value::new(
-            Length::from_optional_values(or_type_value.value, doc, line_number)?.unwrap_or(default),
-            or_type_value.line_number,
-            or_type_value.properties,
-        ))
-    }
-
-    pub fn to_css_string(&self) -> String {
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
             Length::Px(px) => format!("{}px", px),
             Length::Percent(p) => format!("{}%", p),
             Length::Calc(calc) => format!("calc({})", calc),
             Length::Vh(vh) => format!("{}vh", vh),
             Length::Vw(vw) => format!("{}vw", vw),
+            Length::Vmin(vmin) => format!("{}vmin", vmin),
+            Length::Vmax(vmax) => format!("{}vmax", vmax),
             Length::Em(em) => format!("{}em", em),
             Length::Rem(rem) => format!("{}rem", rem),
-            Length::Responsive(r) => r.desktop.to_css_string(),
+            Length::Responsive(r) => match device {
+                Some(ftd::executor::Device::Mobile) => r.mobile.to_css_string(device),
+                _ => r.desktop.to_css_string(device),
+            },
         }
     }
 
@@ -181,13 +193,15 @@ impl Length {
         line_number: usize,
     ) -> ftd::executor::Result<&'static str> {
         match variant {
-            ftd::interpreter2::FTD_LENGTH_PX
-            | ftd::interpreter2::FTD_LENGTH_PERCENT
-            | ftd::interpreter2::FTD_LENGTH_CALC
-            | ftd::interpreter2::FTD_LENGTH_VH
-            | ftd::interpreter2::FTD_LENGTH_VW
-            | ftd::interpreter2::FTD_LENGTH_EM
-            | ftd::interpreter2::FTD_LENGTH_REM => Ok("{0}"),
+            ftd::interpreter::FTD_LENGTH_PX
+            | ftd::interpreter::FTD_LENGTH_PERCENT
+            | ftd::interpreter::FTD_LENGTH_CALC
+            | ftd::interpreter::FTD_LENGTH_VH
+            | ftd::interpreter::FTD_LENGTH_VW
+            | ftd::interpreter::FTD_LENGTH_VMIN
+            | ftd::interpreter::FTD_LENGTH_VMAX
+            | ftd::interpreter::FTD_LENGTH_EM
+            | ftd::interpreter::FTD_LENGTH_REM => Ok("{0}"),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.length: `{}`", t),
                 doc_id,
@@ -202,13 +216,15 @@ impl Length {
         line_number: usize,
     ) -> ftd::executor::Result<&'static str> {
         match variant {
-            ftd::interpreter2::FTD_LENGTH_PX => Ok("{0}px"),
-            ftd::interpreter2::FTD_LENGTH_PERCENT => Ok("{0}%"),
-            ftd::interpreter2::FTD_LENGTH_CALC => Ok("calc({0})"),
-            ftd::interpreter2::FTD_LENGTH_VH => Ok("{0}vh"),
-            ftd::interpreter2::FTD_LENGTH_VW => Ok("{0}vw"),
-            ftd::interpreter2::FTD_LENGTH_EM => Ok("{0}em"),
-            ftd::interpreter2::FTD_LENGTH_REM => Ok("{0}rem"),
+            ftd::interpreter::FTD_LENGTH_PX => Ok("{0}px"),
+            ftd::interpreter::FTD_LENGTH_PERCENT => Ok("{0}%"),
+            ftd::interpreter::FTD_LENGTH_CALC => Ok("calc({0})"),
+            ftd::interpreter::FTD_LENGTH_VH => Ok("{0}vh"),
+            ftd::interpreter::FTD_LENGTH_VW => Ok("{0}vw"),
+            ftd::interpreter::FTD_LENGTH_VMIN => Ok("{0}vmin"),
+            ftd::interpreter::FTD_LENGTH_VMAX => Ok("{0}vmax"),
+            ftd::interpreter::FTD_LENGTH_EM => Ok("{0}em"),
+            ftd::interpreter::FTD_LENGTH_REM => Ok("{0}rem"),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.length: `{}`", t),
                 doc_id,
@@ -224,13 +240,15 @@ impl Length {
         line_number: usize,
     ) -> ftd::executor::Result<String> {
         match variant {
-            ftd::interpreter2::FTD_LENGTH_PX => Ok(format!("{}px", value)),
-            ftd::interpreter2::FTD_LENGTH_PERCENT => Ok(format!("{}%", value)),
-            ftd::interpreter2::FTD_LENGTH_CALC => Ok(format!("calc({})", value)),
-            ftd::interpreter2::FTD_LENGTH_VH => Ok(format!("{}vh", value)),
-            ftd::interpreter2::FTD_LENGTH_VW => Ok(format!("{}vw", value)),
-            ftd::interpreter2::FTD_LENGTH_EM => Ok(format!("{}em", value)),
-            ftd::interpreter2::FTD_LENGTH_REM => Ok(format!("{}rem", value)),
+            ftd::interpreter::FTD_LENGTH_PX => Ok(format!("{}px", value)),
+            ftd::interpreter::FTD_LENGTH_PERCENT => Ok(format!("{}%", value)),
+            ftd::interpreter::FTD_LENGTH_CALC => Ok(format!("calc({})", value)),
+            ftd::interpreter::FTD_LENGTH_VH => Ok(format!("{}vh", value)),
+            ftd::interpreter::FTD_LENGTH_VW => Ok(format!("{}vw", value)),
+            ftd::interpreter::FTD_LENGTH_VMIN => Ok(format!("{}vmin", value)),
+            ftd::interpreter::FTD_LENGTH_VMAX => Ok(format!("{}vmax", value)),
+            ftd::interpreter::FTD_LENGTH_EM => Ok(format!("{}em", value)),
+            ftd::interpreter::FTD_LENGTH_REM => Ok(format!("{}rem", value)),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.length: `{}`", t),
                 doc_id,
@@ -248,16 +266,16 @@ pub struct LengthPair {
 
 impl LengthPair {
     fn from_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<LengthPair> {
         let value = value.resolve(&doc.itdoc(), line_number)?;
         let fields = match value.inner() {
-            Some(ftd::interpreter2::Value::Record { name, fields })
-                if name.eq(ftd::interpreter2::FTD_LENGTH_PAIR)
-                    || name.eq(ftd::interpreter2::FTD_BACKGROUND_SIZE_LENGTH)
-                    || name.eq(ftd::interpreter2::FTD_BACKGROUND_POSITION_LENGTH) =>
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_LENGTH_PAIR)
+                    || name.eq(ftd::interpreter::FTD_BACKGROUND_SIZE_LENGTH)
+                    || name.eq(ftd::interpreter::FTD_BACKGROUND_POSITION_LENGTH) =>
             {
                 fields
             }
@@ -265,7 +283,7 @@ impl LengthPair {
                 return ftd::executor::utils::parse_error(
                     format!(
                         "Expected value of type record `{}`, found: {:?}",
-                        ftd::interpreter2::FTD_LENGTH_PAIR,
+                        ftd::interpreter::FTD_LENGTH_PAIR,
                         t
                     ),
                     doc.name,
@@ -277,7 +295,7 @@ impl LengthPair {
     }
 
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<LengthPair> {
@@ -302,8 +320,12 @@ impl LengthPair {
         Ok(LengthPair { x, y })
     }
 
-    pub fn to_css_string(&self) -> String {
-        format!("{} {}", self.x.to_css_string(), self.y.to_css_string())
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
+        format!(
+            "{} {}",
+            self.x.to_css_string(device),
+            self.y.to_css_string(device)
+        )
     }
 }
 
@@ -315,14 +337,14 @@ pub struct ResponsiveLength {
 
 impl ResponsiveLength {
     fn from_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ResponsiveLength> {
         let value = value.resolve(&doc.itdoc(), line_number)?;
         let fields = match value.inner() {
-            Some(ftd::interpreter2::Value::Record { name, fields })
-                if name.eq(ftd::interpreter2::FTD_RESPONSIVE_LENGTH) =>
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_RESPONSIVE_LENGTH) =>
             {
                 fields
             }
@@ -330,7 +352,7 @@ impl ResponsiveLength {
                 return ftd::executor::utils::parse_error(
                     format!(
                         "Expected value of type record `{}`, found: {:?}",
-                        ftd::interpreter2::FTD_RESPONSIVE_LENGTH,
+                        ftd::interpreter::FTD_RESPONSIVE_LENGTH,
                         t
                     ),
                     doc.name,
@@ -342,7 +364,7 @@ impl ResponsiveLength {
     }
 
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ResponsiveLength> {
@@ -369,6 +391,92 @@ impl ResponsiveLength {
     }
 }
 
+#[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
+pub struct BreakpointWidth {
+    pub mobile: ftd::executor::Value<i64>,
+}
+
+impl BreakpointWidth {
+    fn from_optional_values(
+        or_type_value: Option<ftd::Map<ftd::interpreter::PropertyValue>>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Option<ftd::executor::BreakpointWidth>> {
+        if let Some(value) = or_type_value {
+            Ok(Some(ftd::executor::BreakpointWidth::from_values(
+                value,
+                doc,
+                line_number,
+            )?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub(crate) fn optional_breakpoint_width(
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+        key: &str,
+        inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+        component_name: &str,
+    ) -> ftd::executor::Result<ftd::executor::Value<Option<ftd::executor::BreakpointWidth>>> {
+        let record_values = ftd::executor::value::optional_record_inherited(
+            key,
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+            ftd::interpreter::FTD_BREAKPOINT_WIDTH_DATA,
+            inherited_variables,
+        )?;
+
+        Ok(ftd::executor::Value::new(
+            ftd::executor::BreakpointWidth::from_optional_values(
+                record_values.value,
+                doc,
+                line_number,
+            )?,
+            record_values.line_number,
+            record_values.properties,
+        ))
+    }
+
+    fn from_values(
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<BreakpointWidth> {
+        let get_property_value = |field_name: &str| {
+            values
+                .get(field_name)
+                .ok_or_else(|| ftd::executor::Error::ParseError {
+                    message: format!(
+                        "`{}` field in {} not found",
+                        field_name,
+                        ftd::interpreter::FTD_BREAKPOINT_WIDTH_DATA
+                    ),
+                    doc_id: doc.name.to_string(),
+                    line_number,
+                })
+        };
+
+        let mobile = ftd::executor::Value::new(
+            get_property_value("mobile")?
+                .clone()
+                .resolve(&doc.itdoc(), line_number)?
+                .integer(doc.name, line_number)?,
+            Some(line_number),
+            vec![get_property_value("mobile")?
+                .into_property(ftd::interpreter::PropertySource::header("mobile"))],
+        );
+
+        Ok(BreakpointWidth { mobile })
+    }
+}
+
 #[derive(serde::Deserialize, Default, Debug, PartialEq, Clone, serde::Serialize)]
 pub enum Alignment {
     #[default]
@@ -385,7 +493,7 @@ pub enum Alignment {
 
 impl Alignment {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -397,20 +505,20 @@ impl Alignment {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_ALIGN_TOP_LEFT => Ok(Alignment::TopLeft),
-            ftd::interpreter2::FTD_ALIGN_TOP_CENTER => Ok(Alignment::TopCenter),
-            ftd::interpreter2::FTD_ALIGN_TOP_RIGHT => Ok(Alignment::TopRight),
-            ftd::interpreter2::FTD_ALIGN_LEFT => Ok(Alignment::Left),
-            ftd::interpreter2::FTD_ALIGN_CENTER => Ok(Alignment::Center),
-            ftd::interpreter2::FTD_ALIGN_RIGHT => Ok(Alignment::Right),
-            ftd::interpreter2::FTD_ALIGN_BOTTOM_LEFT => Ok(Alignment::BottomLeft),
-            ftd::interpreter2::FTD_ALIGN_BOTTOM_CENTER => Ok(Alignment::BottomCenter),
-            ftd::interpreter2::FTD_ALIGN_BOTTOM_RIGHT => Ok(Alignment::BottomRight),
+            ftd::interpreter::FTD_ALIGN_TOP_LEFT => Ok(Alignment::TopLeft),
+            ftd::interpreter::FTD_ALIGN_TOP_CENTER => Ok(Alignment::TopCenter),
+            ftd::interpreter::FTD_ALIGN_TOP_RIGHT => Ok(Alignment::TopRight),
+            ftd::interpreter::FTD_ALIGN_LEFT => Ok(Alignment::Left),
+            ftd::interpreter::FTD_ALIGN_CENTER => Ok(Alignment::Center),
+            ftd::interpreter::FTD_ALIGN_RIGHT => Ok(Alignment::Right),
+            ftd::interpreter::FTD_ALIGN_BOTTOM_LEFT => Ok(Alignment::BottomLeft),
+            ftd::interpreter::FTD_ALIGN_BOTTOM_CENTER => Ok(Alignment::BottomCenter),
+            ftd::interpreter::FTD_ALIGN_BOTTOM_RIGHT => Ok(Alignment::BottomRight),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.alignment`", t),
                 doc.name,
@@ -419,40 +527,10 @@ impl Alignment {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn alignment_with_default(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
-        doc: &ftd::executor::TDoc,
-        line_number: usize,
-        key: &str,
-        default: ftd::executor::Alignment,
-        inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
-        component_name: &str,
-    ) -> ftd::executor::Result<ftd::executor::Value<Alignment>> {
-        let or_type_value = ftd::executor::value::optional_or_type(
-            key,
-            component_name,
-            properties,
-            arguments,
-            doc,
-            line_number,
-            ftd::interpreter2::FTD_ALIGN,
-            inherited_variables,
-        )?;
-
-        Ok(ftd::executor::Value::new(
-            Alignment::from_optional_values(or_type_value.value, doc, line_number)?
-                .unwrap_or(default),
-            or_type_value.line_number,
-            or_type_value.properties,
-        ))
-    }
-
     #[allow(dead_code)]
     pub(crate) fn optional_alignment(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -466,7 +544,7 @@ impl Alignment {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_ALIGN,
+            ftd::interpreter::FTD_ALIGN,
             inherited_variables,
         )?;
 
@@ -540,15 +618,15 @@ impl Alignment {
                             null
                         }}
                     "},
-                    top_left = ftd::interpreter2::FTD_ALIGN_TOP_LEFT,
-                    top_center = ftd::interpreter2::FTD_ALIGN_TOP_CENTER,
-                    top_right = ftd::interpreter2::FTD_ALIGN_TOP_RIGHT,
-                    left = ftd::interpreter2::FTD_ALIGN_LEFT,
-                    center = ftd::interpreter2::FTD_ALIGN_CENTER,
-                    right = ftd::interpreter2::FTD_ALIGN_RIGHT,
-                    bottom_left = ftd::interpreter2::FTD_ALIGN_BOTTOM_LEFT,
-                    bottom_center = ftd::interpreter2::FTD_ALIGN_BOTTOM_CENTER,
-                    bottom_right = ftd::interpreter2::FTD_ALIGN_BOTTOM_RIGHT,
+                    top_left = ftd::interpreter::FTD_ALIGN_TOP_LEFT,
+                    top_center = ftd::interpreter::FTD_ALIGN_TOP_CENTER,
+                    top_right = ftd::interpreter::FTD_ALIGN_TOP_RIGHT,
+                    left = ftd::interpreter::FTD_ALIGN_LEFT,
+                    center = ftd::interpreter::FTD_ALIGN_CENTER,
+                    right = ftd::interpreter::FTD_ALIGN_RIGHT,
+                    bottom_left = ftd::interpreter::FTD_ALIGN_BOTTOM_LEFT,
+                    bottom_center = ftd::interpreter::FTD_ALIGN_BOTTOM_CENTER,
+                    bottom_right = ftd::interpreter::FTD_ALIGN_BOTTOM_RIGHT,
                 ),
                 true,
             )
@@ -566,15 +644,15 @@ impl Alignment {
                     null
                 }}
                 "},
-                    top_left = ftd::interpreter2::FTD_ALIGN_TOP_LEFT,
-                    top_center = ftd::interpreter2::FTD_ALIGN_TOP_CENTER,
-                    top_right = ftd::interpreter2::FTD_ALIGN_TOP_RIGHT,
-                    left = ftd::interpreter2::FTD_ALIGN_LEFT,
-                    center = ftd::interpreter2::FTD_ALIGN_CENTER,
-                    right = ftd::interpreter2::FTD_ALIGN_RIGHT,
-                    bottom_left = ftd::interpreter2::FTD_ALIGN_BOTTOM_LEFT,
-                    bottom_center = ftd::interpreter2::FTD_ALIGN_BOTTOM_CENTER,
-                    bottom_right = ftd::interpreter2::FTD_ALIGN_BOTTOM_RIGHT,
+                    top_left = ftd::interpreter::FTD_ALIGN_TOP_LEFT,
+                    top_center = ftd::interpreter::FTD_ALIGN_TOP_CENTER,
+                    top_right = ftd::interpreter::FTD_ALIGN_TOP_RIGHT,
+                    left = ftd::interpreter::FTD_ALIGN_LEFT,
+                    center = ftd::interpreter::FTD_ALIGN_CENTER,
+                    right = ftd::interpreter::FTD_ALIGN_RIGHT,
+                    bottom_left = ftd::interpreter::FTD_ALIGN_BOTTOM_LEFT,
+                    bottom_center = ftd::interpreter::FTD_ALIGN_BOTTOM_CENTER,
+                    bottom_right = ftd::interpreter::FTD_ALIGN_BOTTOM_RIGHT,
                 ),
                 true,
             )
@@ -596,15 +674,15 @@ impl Alignment {
                     null
                 }}
                 "},
-                    top_left = ftd::interpreter2::FTD_ALIGN_TOP_LEFT,
-                    top_center = ftd::interpreter2::FTD_ALIGN_TOP_CENTER,
-                    top_right = ftd::interpreter2::FTD_ALIGN_TOP_RIGHT,
-                    left = ftd::interpreter2::FTD_ALIGN_LEFT,
-                    center = ftd::interpreter2::FTD_ALIGN_CENTER,
-                    right = ftd::interpreter2::FTD_ALIGN_RIGHT,
-                    bottom_left = ftd::interpreter2::FTD_ALIGN_BOTTOM_LEFT,
-                    bottom_center = ftd::interpreter2::FTD_ALIGN_BOTTOM_CENTER,
-                    bottom_right = ftd::interpreter2::FTD_ALIGN_BOTTOM_RIGHT,
+                    top_left = ftd::interpreter::FTD_ALIGN_TOP_LEFT,
+                    top_center = ftd::interpreter::FTD_ALIGN_TOP_CENTER,
+                    top_right = ftd::interpreter::FTD_ALIGN_TOP_RIGHT,
+                    left = ftd::interpreter::FTD_ALIGN_LEFT,
+                    center = ftd::interpreter::FTD_ALIGN_CENTER,
+                    right = ftd::interpreter::FTD_ALIGN_RIGHT,
+                    bottom_left = ftd::interpreter::FTD_ALIGN_BOTTOM_LEFT,
+                    bottom_center = ftd::interpreter::FTD_ALIGN_BOTTOM_CENTER,
+                    bottom_right = ftd::interpreter::FTD_ALIGN_BOTTOM_RIGHT,
                 ),
                 true,
             )
@@ -622,15 +700,15 @@ impl Alignment {
                             null
                         }}
                     "},
-                    top_left = ftd::interpreter2::FTD_ALIGN_TOP_LEFT,
-                    top_center = ftd::interpreter2::FTD_ALIGN_TOP_CENTER,
-                    top_right = ftd::interpreter2::FTD_ALIGN_TOP_RIGHT,
-                    left = ftd::interpreter2::FTD_ALIGN_LEFT,
-                    center = ftd::interpreter2::FTD_ALIGN_CENTER,
-                    right = ftd::interpreter2::FTD_ALIGN_RIGHT,
-                    bottom_left = ftd::interpreter2::FTD_ALIGN_BOTTOM_LEFT,
-                    bottom_center = ftd::interpreter2::FTD_ALIGN_BOTTOM_CENTER,
-                    bottom_right = ftd::interpreter2::FTD_ALIGN_BOTTOM_RIGHT,
+                    top_left = ftd::interpreter::FTD_ALIGN_TOP_LEFT,
+                    top_center = ftd::interpreter::FTD_ALIGN_TOP_CENTER,
+                    top_right = ftd::interpreter::FTD_ALIGN_TOP_RIGHT,
+                    left = ftd::interpreter::FTD_ALIGN_LEFT,
+                    center = ftd::interpreter::FTD_ALIGN_CENTER,
+                    right = ftd::interpreter::FTD_ALIGN_RIGHT,
+                    bottom_left = ftd::interpreter::FTD_ALIGN_BOTTOM_LEFT,
+                    bottom_center = ftd::interpreter::FTD_ALIGN_BOTTOM_CENTER,
+                    bottom_right = ftd::interpreter::FTD_ALIGN_BOTTOM_RIGHT,
                 ),
                 true,
             )
@@ -649,7 +727,7 @@ pub enum Resizing {
 
 impl Resizing {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -661,12 +739,12 @@ impl Resizing {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            t if t.starts_with(ftd::interpreter2::FTD_RESIZING_FIXED) => {
+            t if t.starts_with(ftd::interpreter::FTD_RESIZING_FIXED) => {
                 let value = or_type_value.1.clone().resolve(&doc.itdoc(), line_number)?;
                 let (_, variant, value) = value.get_or_type(doc.name, line_number)?;
                 Ok(Resizing::Fixed(Length::from_values(
@@ -675,9 +753,9 @@ impl Resizing {
                     line_number,
                 )?))
             }
-            ftd::interpreter2::FTD_RESIZING_HUG_CONTENT => Ok(Resizing::HugContent),
-            ftd::interpreter2::FTD_RESIZING_AUTO => Ok(Resizing::Auto),
-            ftd::interpreter2::FTD_RESIZING_FILL_CONTAINER => Ok(Resizing::FillContainer),
+            ftd::interpreter::FTD_RESIZING_HUG_CONTENT => Ok(Resizing::HugContent),
+            ftd::interpreter::FTD_RESIZING_AUTO => Ok(Resizing::Auto),
+            ftd::interpreter::FTD_RESIZING_FILL_CONTAINER => Ok(Resizing::FillContainer),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.resizing`", t),
                 doc.name,
@@ -687,8 +765,8 @@ impl Resizing {
     }
 
     pub(crate) fn optional_resizing(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -702,7 +780,7 @@ impl Resizing {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_RESIZING,
+            ftd::interpreter::FTD_RESIZING,
             inherited_variables,
         )?;
 
@@ -713,41 +791,11 @@ impl Resizing {
         ))
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn resizing_with_default(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
-        doc: &ftd::executor::TDoc,
-        line_number: usize,
-        key: &str,
-        default: Resizing,
-        inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
-        component_name: &str,
-    ) -> ftd::executor::Result<ftd::executor::Value<Resizing>> {
-        let or_type_value = ftd::executor::value::optional_or_type(
-            key,
-            component_name,
-            properties,
-            arguments,
-            doc,
-            line_number,
-            ftd::interpreter2::FTD_RESIZING,
-            inherited_variables,
-        )?;
-
-        Ok(ftd::executor::Value::new(
-            Resizing::from_optional_values(or_type_value.value, doc, line_number)?
-                .unwrap_or(default),
-            or_type_value.line_number,
-            or_type_value.properties,
-        ))
-    }
-
-    pub fn to_css_string(&self) -> String {
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
             Resizing::HugContent => "fit-content".to_string(),
             Resizing::FillContainer => "100%".to_string(),
-            Resizing::Fixed(l) => l.to_css_string(),
+            Resizing::Fixed(l) => l.to_css_string(device),
             Resizing::Auto => "auto".to_string(),
         }
     }
@@ -759,19 +807,19 @@ impl Resizing {
         line_number: usize,
     ) -> ftd::executor::Result<(&'static str, bool)> {
         match variant {
-            ftd::interpreter2::FTD_RESIZING_FIXED => {
+            ftd::interpreter::FTD_RESIZING_FIXED => {
                 let remaining = full_variant
                     .trim_start_matches(format!("{}.", variant).as_str())
                     .to_string();
-                let variant = format!("{}.{}", ftd::interpreter2::FTD_LENGTH, remaining);
+                let variant = format!("{}.{}", ftd::interpreter::FTD_LENGTH, remaining);
                 Ok((
                     Length::get_pattern_from_variant_str(variant.as_str(), doc_id, line_number)?,
                     true,
                 ))
             }
-            ftd::interpreter2::FTD_RESIZING_FILL_CONTAINER => Ok(("100%", false)),
-            ftd::interpreter2::FTD_RESIZING_HUG_CONTENT => Ok(("fit-content", false)),
-            ftd::interpreter2::FTD_RESIZING_AUTO => Ok(("auto", false)),
+            ftd::interpreter::FTD_RESIZING_FILL_CONTAINER => Ok(("100%", false)),
+            ftd::interpreter::FTD_RESIZING_HUG_CONTENT => Ok(("fit-content", false)),
+            ftd::interpreter::FTD_RESIZING_AUTO => Ok(("auto", false)),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.resizing: `{}`", t),
                 doc_id,
@@ -787,16 +835,16 @@ impl Resizing {
         line_number: usize,
     ) -> ftd::executor::Result<&'static str> {
         match variant {
-            ftd::interpreter2::FTD_RESIZING_FIXED => {
+            ftd::interpreter::FTD_RESIZING_FIXED => {
                 let remaining = full_variant
                     .trim_start_matches(format!("{}.", variant).as_str())
                     .to_string();
-                let variant = format!("{}.{}", ftd::interpreter2::FTD_LENGTH, remaining);
+                let variant = format!("{}.{}", ftd::interpreter::FTD_LENGTH, remaining);
                 Length::set_pattern_from_variant_str(variant.as_str(), doc_id, line_number)
             }
-            ftd::interpreter2::FTD_RESIZING_FILL_CONTAINER => Ok("100%"),
-            ftd::interpreter2::FTD_RESIZING_HUG_CONTENT => Ok("fit-content"),
-            ftd::interpreter2::FTD_RESIZING_AUTO => Ok("auto"),
+            ftd::interpreter::FTD_RESIZING_FILL_CONTAINER => Ok("100%"),
+            ftd::interpreter::FTD_RESIZING_HUG_CONTENT => Ok("fit-content"),
+            ftd::interpreter::FTD_RESIZING_AUTO => Ok("auto"),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.resizing: `{}`", t),
                 doc_id,
@@ -813,16 +861,16 @@ impl Resizing {
         line_number: usize,
     ) -> ftd::executor::Result<String> {
         match variant {
-            ftd::interpreter2::FTD_RESIZING_FIXED => {
+            ftd::interpreter::FTD_RESIZING_FIXED => {
                 let remaining = full_variant
                     .trim_start_matches(format!("{}.", variant).as_str())
                     .to_string();
-                let variant = format!("{}.{}", ftd::interpreter2::FTD_LENGTH, remaining);
+                let variant = format!("{}.{}", ftd::interpreter::FTD_LENGTH, remaining);
                 Length::set_value_from_variant(variant.as_str(), value, doc_id, line_number)
             }
-            ftd::interpreter2::FTD_RESIZING_FILL_CONTAINER => Ok("100%".to_string()),
-            ftd::interpreter2::FTD_RESIZING_HUG_CONTENT => Ok("fit-content".to_string()),
-            ftd::interpreter2::FTD_RESIZING_AUTO => Ok("auto".to_string()),
+            ftd::interpreter::FTD_RESIZING_FILL_CONTAINER => Ok("100%".to_string()),
+            ftd::interpreter::FTD_RESIZING_HUG_CONTENT => Ok("fit-content".to_string()),
+            ftd::interpreter::FTD_RESIZING_AUTO => Ok("auto".to_string()),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.resizing: `{}`", t),
                 doc_id,
@@ -841,14 +889,14 @@ pub struct BackgroundImage {
 
 impl BackgroundImage {
     fn from_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ftd::executor::BackgroundImage> {
         let value = value.resolve(&doc.itdoc(), line_number)?;
         let fields = match value.inner() {
-            Some(ftd::interpreter2::Value::Record { name, fields })
-                if name.eq(ftd::interpreter2::FTD_BG_IMAGE) =>
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_BG_IMAGE) =>
             {
                 fields
             }
@@ -856,7 +904,7 @@ impl BackgroundImage {
                 return ftd::executor::utils::parse_error(
                     format!(
                         "Expected value of type record `{}`, found: {:?}",
-                        ftd::interpreter2::FTD_BG_IMAGE,
+                        ftd::interpreter::FTD_BG_IMAGE,
                         t
                     ),
                     doc.name,
@@ -868,7 +916,7 @@ impl BackgroundImage {
     }
 
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ftd::executor::BackgroundImage> {
@@ -890,7 +938,7 @@ impl BackgroundImage {
             )?,
             Some(line_number),
             vec![get_property_value("src")?
-                .into_property(ftd::interpreter2::PropertySource::header("src"))],
+                .into_property(ftd::interpreter::PropertySource::header("src"))],
         );
 
         let repeat = ftd::executor::Value::new(
@@ -901,7 +949,7 @@ impl BackgroundImage {
             )?,
             Some(line_number),
             vec![get_property_value("repeat")?
-                .into_property(ftd::interpreter2::PropertySource::header("repeat"))],
+                .into_property(ftd::interpreter::PropertySource::header("repeat"))],
         );
 
         let size = ftd::executor::Value::new(
@@ -912,7 +960,7 @@ impl BackgroundImage {
             )?,
             Some(line_number),
             vec![get_property_value("size")?
-                .into_property(ftd::interpreter2::PropertySource::header("size"))],
+                .into_property(ftd::interpreter::PropertySource::header("size"))],
         );
 
         let position = ftd::executor::Value::new(
@@ -923,7 +971,7 @@ impl BackgroundImage {
             )?,
             Some(line_number),
             vec![get_property_value("position")?
-                .into_property(ftd::interpreter2::PropertySource::header("position"))],
+                .into_property(ftd::interpreter::PropertySource::header("position"))],
         );
 
         Ok(ftd::executor::BackgroundImage {
@@ -941,22 +989,365 @@ impl BackgroundImage {
     pub fn to_repeat_css_string(&self) -> String {
         match self.repeat.value.as_ref() {
             Some(s) => s.to_css_string(),
-            None => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
+            None => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
         }
     }
 
-    pub fn to_size_css_string(&self) -> String {
+    pub fn to_size_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self.size.value.as_ref() {
-            Some(s) => s.to_css_string(),
-            None => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
+            Some(s) => s.to_css_string(device),
+            None => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
         }
     }
 
-    pub fn to_position_css_string(&self) -> String {
+    pub fn to_position_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self.position.value.as_ref() {
-            Some(s) => s.to_css_string(),
-            None => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
+            Some(s) => s.to_css_string(device),
+            None => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
         }
+    }
+}
+
+#[derive(serde::Deserialize, Debug, PartialEq, Clone, serde::Serialize)]
+pub struct LinearGradientColor {
+    pub color: Color,
+    pub start: ftd::executor::Value<Option<Length>>,
+    pub end: ftd::executor::Value<Option<Length>>,
+    pub stop_position: ftd::executor::Value<Option<Length>>,
+}
+
+impl LinearGradientColor {
+    fn from_vec_values(
+        value: ftd::interpreter::PropertyValue,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Vec<LinearGradientColor>> {
+        let mut result = vec![];
+        let value = value.resolve(&doc.itdoc(), line_number)?;
+        match value.inner() {
+            Some(ftd::interpreter::Value::List { data, kind })
+                if kind
+                    .kind
+                    .get_name()
+                    .eq(ftd::interpreter::FTD_LINEAR_GRADIENT_COLOR) =>
+            {
+                for element in data.iter() {
+                    let ln = element.line_number();
+                    result.push(LinearGradientColor::from_value(
+                        element.to_owned(),
+                        doc,
+                        ln,
+                    )?)
+                }
+            }
+            t => {
+                return ftd::executor::utils::parse_error(
+                    format!(
+                        "Expected list value of type `{}`, found: {:?}",
+                        ftd::interpreter::FTD_LINEAR_GRADIENT,
+                        t
+                    ),
+                    doc.name,
+                    line_number,
+                )
+            }
+        };
+        Ok(result)
+    }
+
+    fn from_value(
+        value: ftd::interpreter::PropertyValue,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<LinearGradientColor> {
+        let value = value.resolve(&doc.itdoc(), line_number)?;
+        let fields = match value.inner() {
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_LINEAR_GRADIENT_COLOR) =>
+            {
+                fields
+            }
+            t => {
+                return ftd::executor::utils::parse_error(
+                    format!(
+                        "Expected value of type record `{}`, found: {:?}",
+                        ftd::interpreter::FTD_LINEAR_GRADIENT_COLOR,
+                        t
+                    ),
+                    doc.name,
+                    line_number,
+                )
+            }
+        };
+        ftd::executor::LinearGradientColor::from_values(fields, doc, line_number)
+    }
+
+    fn from_values(
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<LinearGradientColor> {
+        let get_property_value = |field_name: &str| {
+            values
+                .get(field_name)
+                .ok_or_else(|| ftd::executor::Error::ParseError {
+                    message: format!(
+                        "`{}` field in ftd.linear-gradient-color not found",
+                        field_name
+                    ),
+                    doc_id: doc.name.to_string(),
+                    line_number,
+                })
+        };
+
+        let color = ftd::executor::Color::from_value(
+            get_property_value("color")?.clone(),
+            doc,
+            line_number,
+        )?;
+
+        let start = ftd::executor::Value::new(
+            ftd::executor::Length::from_optional_value(
+                values.get("start").cloned(),
+                doc,
+                line_number,
+            )?,
+            Some(line_number),
+            vec![get_property_value("start")?
+                .into_property(ftd::interpreter::PropertySource::header("start"))],
+        );
+
+        let end = ftd::executor::Value::new(
+            ftd::executor::Length::from_optional_value(
+                values.get("end").cloned(),
+                doc,
+                line_number,
+            )?,
+            Some(line_number),
+            vec![get_property_value("end")?
+                .into_property(ftd::interpreter::PropertySource::header("end"))],
+        );
+
+        let stop_position = ftd::executor::Value::new(
+            ftd::executor::Length::from_optional_value(
+                values.get("stop-position").cloned(),
+                doc,
+                line_number,
+            )?,
+            Some(line_number),
+            vec![get_property_value("stop-position")?
+                .into_property(ftd::interpreter::PropertySource::header("stop-position"))],
+        );
+
+        Ok(ftd::executor::LinearGradientColor {
+            color,
+            start,
+            end,
+            stop_position,
+        })
+    }
+
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
+        let mut result = self.color.light.value.to_css_string();
+        if let Some(start) = self.start.value.as_ref() {
+            result.push_str(format!(" {}", start.to_css_string(device)).as_str());
+        }
+        if let Some(end) = self.end.value.as_ref() {
+            result.push_str(format!(" {}", end.to_css_string(device)).as_str());
+        }
+        if let Some(stop) = self.stop_position.value.as_ref() {
+            result.push_str(format!(", {}", stop.to_css_string(device)).as_str());
+        }
+        result
+    }
+}
+
+#[derive(serde::Deserialize, Debug, PartialEq, Clone, serde::Serialize)]
+pub enum LinearGradientDirection {
+    Angle(f64),
+    Turn(f64),
+    Left,
+    Right,
+    Top,
+    Bottom,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+impl LinearGradientDirection {
+    fn from_value(
+        value: ftd::interpreter::PropertyValue,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<LinearGradientDirection> {
+        let binding = value.resolve(&doc.itdoc(), line_number)?;
+        let value = binding.get_or_type(doc.name, line_number)?;
+        let value = (value.1.to_owned(), value.2.to_owned());
+        LinearGradientDirection::from_values(value, doc, line_number)
+    }
+
+    fn from_values(
+        or_type_value: (String, ftd::interpreter::PropertyValue),
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Self> {
+        match or_type_value.0.as_str() {
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_LEFT => {
+                Ok(LinearGradientDirection::Left)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_RIGHT => {
+                Ok(LinearGradientDirection::Right)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_TOP => {
+                Ok(LinearGradientDirection::Top)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_BOTTOM => {
+                Ok(LinearGradientDirection::Bottom)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_TOP_LEFT => {
+                Ok(LinearGradientDirection::TopLeft)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_BOTTOM_LEFT => {
+                Ok(LinearGradientDirection::BottomLeft)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_TOP_RIGHT => {
+                Ok(LinearGradientDirection::TopRight)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_BOTTOM_RIGHT => {
+                Ok(LinearGradientDirection::BottomRight)
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_ANGLE => {
+                Ok(LinearGradientDirection::Angle(
+                    or_type_value
+                        .1
+                        .clone()
+                        .resolve(&doc.itdoc(), line_number)?
+                        .decimal(doc.name, line_number)?,
+                ))
+            }
+            ftd::interpreter::FTD_LINEAR_GRADIENT_DIRECTIONS_TURN => {
+                Ok(LinearGradientDirection::Turn(
+                    or_type_value
+                        .1
+                        .clone()
+                        .resolve(&doc.itdoc(), line_number)?
+                        .decimal(doc.name, line_number)?,
+                ))
+            }
+            t => ftd::executor::utils::parse_error(
+                format!(
+                    "Unknown variant `{}` for or-type `ftd.linear-gradient-directions`",
+                    t
+                ),
+                doc.name,
+                line_number,
+            ),
+        }
+    }
+    // Top, Bottom, Left, Right angles
+    // 0deg, 180deg, 270deg, and 90deg
+    pub fn to_css_string(&self) -> String {
+        match self {
+            LinearGradientDirection::Top => "0deg".to_string(),
+            LinearGradientDirection::Bottom => "180deg".to_string(),
+            LinearGradientDirection::Left => "270deg".to_string(),
+            LinearGradientDirection::Right => "90deg".to_string(),
+            LinearGradientDirection::TopLeft => "315deg".to_string(),
+            LinearGradientDirection::BottomLeft => "225deg".to_string(),
+            LinearGradientDirection::TopRight => "45deg".to_string(),
+            LinearGradientDirection::BottomRight => "135deg".to_string(),
+            LinearGradientDirection::Angle(a) => format!("{}deg", a),
+            LinearGradientDirection::Turn(t) => format!("{}turn", t),
+        }
+    }
+}
+
+#[derive(serde::Deserialize, Debug, PartialEq, Clone, serde::Serialize)]
+pub struct LinearGradient {
+    pub direction: ftd::executor::Value<LinearGradientDirection>,
+    pub colors: ftd::executor::Value<Vec<LinearGradientColor>>,
+}
+
+impl LinearGradient {
+    fn from_value(
+        value: ftd::interpreter::PropertyValue,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<ftd::executor::LinearGradient> {
+        let value = value.resolve(&doc.itdoc(), line_number)?;
+        let fields = match value.inner() {
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_LINEAR_GRADIENT) =>
+            {
+                fields
+            }
+            t => {
+                return ftd::executor::utils::parse_error(
+                    format!(
+                        "Expected value of type record `{}`, found: {:?}",
+                        ftd::interpreter::FTD_LINEAR_GRADIENT,
+                        t
+                    ),
+                    doc.name,
+                    line_number,
+                )
+            }
+        };
+        ftd::executor::LinearGradient::from_values(fields, doc, line_number)
+    }
+
+    fn from_values(
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<ftd::executor::LinearGradient> {
+        let get_property_value = |field_name: &str| {
+            values
+                .get(field_name)
+                .ok_or_else(|| ftd::executor::Error::ParseError {
+                    message: format!("`{}` field in ftd.linear-gradient not found", field_name),
+                    doc_id: doc.name.to_string(),
+                    line_number,
+                })
+        };
+
+        let direction = ftd::executor::Value::new(
+            ftd::executor::LinearGradientDirection::from_value(
+                get_property_value("direction")?.clone(),
+                doc,
+                line_number,
+            )?,
+            Some(line_number),
+            vec![get_property_value("direction")?
+                .into_property(ftd::interpreter::PropertySource::header("direction"))],
+        );
+
+        let colors = ftd::executor::Value::new(
+            ftd::executor::LinearGradientColor::from_vec_values(
+                get_property_value("colors")?.clone(),
+                doc,
+                line_number,
+            )?,
+            Some(line_number),
+            vec![get_property_value("colors")?
+                .into_property(ftd::interpreter::PropertySource::header("colors"))],
+        );
+
+        Ok(ftd::executor::LinearGradient { direction, colors })
+    }
+
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
+        format!(
+            "linear-gradient({}, {})",
+            self.direction.value.to_css_string(),
+            self.colors
+                .value
+                .iter()
+                .map(|lc| lc.to_css_string(device))
+                .join(", ")
+        )
     }
 }
 
@@ -964,11 +1355,12 @@ impl BackgroundImage {
 pub enum Background {
     Solid(ftd::executor::Color),
     Image(ftd::executor::BackgroundImage),
+    LinearGradient(ftd::executor::LinearGradient),
 }
 
 impl Background {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -984,19 +1376,24 @@ impl Background {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_BACKGROUND_SOLID => Ok(ftd::executor::Background::Solid(
+            ftd::interpreter::FTD_BACKGROUND_SOLID => Ok(ftd::executor::Background::Solid(
                 Color::from_value(or_type_value.1, doc, line_number)?,
             )),
-            ftd::interpreter2::FTD_BACKGROUND_IMAGE => Ok(ftd::executor::Background::Image(
+            ftd::interpreter::FTD_BACKGROUND_IMAGE => Ok(ftd::executor::Background::Image(
                 ftd::executor::BackgroundImage::from_value(or_type_value.1, doc, line_number)?,
             )),
+            ftd::interpreter::FTD_BACKGROUND_LINEAR_GRADIENT => {
+                Ok(ftd::executor::Background::LinearGradient(
+                    ftd::executor::LinearGradient::from_value(or_type_value.1, doc, line_number)?,
+                ))
+            }
             t => ftd::executor::utils::parse_error(
-                format!("Unknown variant `{}` for or-type `ftd.length`", t),
+                format!("Unknown variant `{}` for or-type `ftd.background`", t),
                 doc.name,
                 line_number,
             ),
@@ -1004,8 +1401,8 @@ impl Background {
     }
 
     pub(crate) fn optional_background(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -1019,7 +1416,7 @@ impl Background {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_BACKGROUND,
+            ftd::interpreter::FTD_BACKGROUND,
             inherited_variables,
         )?;
 
@@ -1033,121 +1430,82 @@ impl Background {
     pub fn to_solid_css_string(&self) -> String {
         match self {
             ftd::executor::Background::Solid(c) => c.light.value.to_css_string(),
-            ftd::executor::Background::Image(_) => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
+            ftd::executor::Background::Image(_) => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
+            ftd::executor::Background::LinearGradient(_) => {
+                ftd::interpreter::FTD_IGNORE_KEY.to_string()
+            }
         }
     }
 
-    pub fn to_image_src_css_string(&self) -> String {
+    pub fn to_image_src_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
-            ftd::executor::Background::Solid(_) => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
+            ftd::executor::Background::Solid(_) => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
             ftd::executor::Background::Image(i) => i.to_image_src_css_string(),
+            ftd::executor::Background::LinearGradient(l) => l.to_css_string(device),
         }
     }
 
     pub fn to_image_repeat_css_string(&self) -> String {
         match self {
-            ftd::executor::Background::Solid(_) => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
+            ftd::executor::Background::Solid(_) => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
             ftd::executor::Background::Image(i) => i.to_repeat_css_string(),
+            ftd::executor::Background::LinearGradient(_) => {
+                ftd::interpreter::FTD_IGNORE_KEY.to_string()
+            }
         }
     }
 
-    pub fn to_image_size_css_string(&self) -> String {
+    pub fn to_image_size_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
-            ftd::executor::Background::Solid(_) => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
-            ftd::executor::Background::Image(i) => i.to_size_css_string(),
+            ftd::executor::Background::Solid(_) => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
+            ftd::executor::Background::Image(i) => i.to_size_css_string(device),
+            ftd::executor::Background::LinearGradient(_) => {
+                ftd::interpreter::FTD_IGNORE_KEY.to_string()
+            }
         }
     }
 
-    pub fn to_image_position_css_string(&self) -> String {
+    pub fn to_image_position_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
-            ftd::executor::Background::Solid(_) => ftd::interpreter2::FTD_IGNORE_KEY.to_string(),
-            ftd::executor::Background::Image(i) => i.to_position_css_string(),
-        }
-    }
-
-    pub fn to_css_string(&self) -> String {
-        match self {
-            ftd::executor::Background::Solid(c) => c.light.value.to_css_string(),
-            ftd::executor::Background::Image(i) => i.to_image_src_css_string(),
+            ftd::executor::Background::Solid(_) => ftd::interpreter::FTD_IGNORE_KEY.to_string(),
+            ftd::executor::Background::Image(i) => i.to_position_css_string(device),
+            ftd::executor::Background::LinearGradient(_) => {
+                ftd::interpreter::FTD_IGNORE_KEY.to_string()
+            }
         }
     }
 
     pub fn background_image_pattern() -> (String, bool) {
         (
-            r#"
-                let bg = {0};
-                if (typeof bg === 'object' && "src" in bg) {
-                    let img_src = bg.src;
-                    if(!data["ftd#dark-mode"] && typeof img_src === 'object' && "light" in img_src) {
-                        "url(" + img_src.light + ")"
-                    }
-                    else if(data["ftd#dark-mode"] && typeof img_src === 'object' && "dark" in img_src){
-                        "url(" + img_src.dark + ")"
-                    }
-                    else {
-                        null
-                    }
-                } else {
-                    null
-                }
-            "#.to_string(),
+            "window.ftd.dependencies.eval_background_image({0}, data)".to_string(),
             true,
         )
     }
 
     pub fn background_repeat_pattern() -> (String, bool) {
         (
-            r#"
-                let bg = {0};
-                if (typeof bg === 'object' && "repeat" in bg) {
-                    bg.repeat
-                } else {
-                    null
-                }
-            "#
-            .to_string(),
+            "window.ftd.dependencies.eval_background_repeat({0})".to_string(),
+            true,
+        )
+    }
+
+    pub fn background_color_pattern() -> (String, bool) {
+        (
+            "window.ftd.dependencies.eval_background_color({0}, data)".to_string(),
             true,
         )
     }
 
     pub fn background_size_pattern() -> (String, bool) {
         (
-            r#"
-                let bg = {0};
-                if (typeof bg === 'object' && "size" in bg) {
-                    let sz = bg.size;
-                    if (typeof sz === 'object' && "x" in sz && "y" in sz) {
-                        sz.x + " " + sz.y
-                    }
-                    else {
-                        sz
-                    }
-                } else {
-                    null
-                }
-            "#
-            .to_string(),
+            "window.ftd.dependencies.eval_background_size({0})".to_string(),
             true,
         )
     }
 
     pub fn background_position_pattern() -> (String, bool) {
         (
-            r#"
-                let bg = {0};
-                if (typeof bg === 'object' && "position" in bg) {
-                    let pos = bg.position;
-                    if (typeof pos === 'object' && "x" in pos && "y" in pos) {
-                        pos.x + " " + pos.y
-                    }
-                    else {
-                        pos.replace("-", " ")
-                    }
-                } else {
-                    null
-                }
-            "#
-            .to_string(),
+            "window.ftd.dependencies.eval_background_position({0})".to_string(),
             true,
         )
     }
@@ -1165,53 +1523,48 @@ pub enum BackgroundRepeat {
 
 impl BackgroundRepeat {
     fn from_optional_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<ftd::executor::BackgroundRepeat>> {
-        match value.value(doc.name, line_number)? {
-            ftd::interpreter2::Value::Optional { data, .. } if data.is_none() => Ok(None),
-            _ => Ok(Some(ftd::executor::BackgroundRepeat::from_value(
-                value,
-                doc,
-                line_number,
-            )?)),
-        }
-    }
-
-    fn from_value(
-        value: ftd::interpreter2::PropertyValue,
-        doc: &ftd::executor::TDoc,
-        line_number: usize,
-    ) -> ftd::executor::Result<ftd::executor::BackgroundRepeat> {
         let binding = value.resolve(&doc.itdoc(), line_number)?;
+        if let ftd::interpreter::Value::Optional { data, .. } = &binding {
+            if data.is_none() {
+                return Ok(None);
+            }
+        }
+
         let value = binding.get_or_type(doc.name, line_number)?;
         let value = (value.1.to_owned(), value.2.to_owned());
-        ftd::executor::BackgroundRepeat::from_values(value, doc, line_number)
+        Ok(Some(ftd::executor::BackgroundRepeat::from_values(
+            value,
+            doc,
+            line_number,
+        )?))
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ftd::executor::BackgroundRepeat> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_BACKGROUND_REPEAT_BOTH_REPEAT => {
+            ftd::interpreter::FTD_BACKGROUND_REPEAT_BOTH_REPEAT => {
                 Ok(ftd::executor::BackgroundRepeat::Repeat)
             }
-            ftd::interpreter2::FTD_BACKGROUND_REPEAT_X_REPEAT => {
+            ftd::interpreter::FTD_BACKGROUND_REPEAT_X_REPEAT => {
                 Ok(ftd::executor::BackgroundRepeat::RepeatX)
             }
-            ftd::interpreter2::FTD_BACKGROUND_REPEAT_Y_REPEAT => {
+            ftd::interpreter::FTD_BACKGROUND_REPEAT_Y_REPEAT => {
                 Ok(ftd::executor::BackgroundRepeat::RepeatY)
             }
-            ftd::interpreter2::FTD_BACKGROUND_REPEAT_NO_REPEAT => {
+            ftd::interpreter::FTD_BACKGROUND_REPEAT_NO_REPEAT => {
                 Ok(ftd::executor::BackgroundRepeat::NoRepeat)
             }
-            ftd::interpreter2::FTD_BACKGROUND_REPEAT_SPACE => {
+            ftd::interpreter::FTD_BACKGROUND_REPEAT_SPACE => {
                 Ok(ftd::executor::BackgroundRepeat::Space)
             }
-            ftd::interpreter2::FTD_BACKGROUND_REPEAT_ROUND => {
+            ftd::interpreter::FTD_BACKGROUND_REPEAT_ROUND => {
                 Ok(ftd::executor::BackgroundRepeat::Round)
             }
             t => ftd::executor::utils::parse_error(
@@ -1247,45 +1600,38 @@ pub enum BackgroundSize {
 
 impl BackgroundSize {
     fn from_optional_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<ftd::executor::BackgroundSize>> {
-        match value.value(doc.name, line_number)? {
-            ftd::interpreter2::Value::Optional { data, .. } if data.is_none() => Ok(None),
-            _ => Ok(Some(ftd::executor::BackgroundSize::from_value(
-                value,
-                doc,
-                line_number,
-            )?)),
-        }
-    }
-
-    fn from_value(
-        value: ftd::interpreter2::PropertyValue,
-        doc: &ftd::executor::TDoc,
-        line_number: usize,
-    ) -> ftd::executor::Result<ftd::executor::BackgroundSize> {
         let binding = value.resolve(&doc.itdoc(), line_number)?;
+        if let ftd::interpreter::Value::Optional { data, .. } = &binding {
+            if data.is_none() {
+                return Ok(None);
+            }
+        }
+
         let value = binding.get_or_type(doc.name, line_number)?;
         let value = (value.1.to_owned(), value.2.to_owned());
-        ftd::executor::BackgroundSize::from_values(value, doc, line_number)
+        Ok(Some(ftd::executor::BackgroundSize::from_values(
+            value,
+            doc,
+            line_number,
+        )?))
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ftd::executor::BackgroundSize> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_BACKGROUND_SIZE_AUTO => Ok(ftd::executor::BackgroundSize::Auto),
-            ftd::interpreter2::FTD_BACKGROUND_SIZE_COVER => {
-                Ok(ftd::executor::BackgroundSize::Cover)
-            }
-            ftd::interpreter2::FTD_BACKGROUND_SIZE_CONTAIN => {
+            ftd::interpreter::FTD_BACKGROUND_SIZE_AUTO => Ok(ftd::executor::BackgroundSize::Auto),
+            ftd::interpreter::FTD_BACKGROUND_SIZE_COVER => Ok(ftd::executor::BackgroundSize::Cover),
+            ftd::interpreter::FTD_BACKGROUND_SIZE_CONTAIN => {
                 Ok(ftd::executor::BackgroundSize::Contain)
             }
-            ftd::interpreter2::FTD_BACKGROUND_SIZE_LENGTH => {
+            ftd::interpreter::FTD_BACKGROUND_SIZE_LENGTH => {
                 Ok(ftd::executor::BackgroundSize::Length(
                     LengthPair::from_value(or_type_value.1, doc, line_number)?,
                 ))
@@ -1298,12 +1644,12 @@ impl BackgroundSize {
         }
     }
 
-    pub fn to_css_string(&self) -> String {
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
             ftd::executor::BackgroundSize::Auto => "auto".to_string(),
             ftd::executor::BackgroundSize::Cover => "cover".to_string(),
             ftd::executor::BackgroundSize::Contain => "contain".to_string(),
-            ftd::executor::BackgroundSize::Length(l) => l.to_css_string(),
+            ftd::executor::BackgroundSize::Length(l) => l.to_css_string(device),
         }
     }
 }
@@ -1327,74 +1673,69 @@ pub enum BackgroundPosition {
 
 impl BackgroundPosition {
     fn from_optional_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<ftd::executor::BackgroundPosition>> {
-        match value.value(doc.name, line_number)? {
-            ftd::interpreter2::Value::Optional { data, .. } if data.is_none() => Ok(None),
-            _ => Ok(Some(ftd::executor::BackgroundPosition::from_value(
-                value,
-                doc,
-                line_number,
-            )?)),
-        }
-    }
-
-    fn from_value(
-        value: ftd::interpreter2::PropertyValue,
-        doc: &ftd::executor::TDoc,
-        line_number: usize,
-    ) -> ftd::executor::Result<ftd::executor::BackgroundPosition> {
         let binding = value.resolve(&doc.itdoc(), line_number)?;
+        if let ftd::interpreter::Value::Optional { data, .. } = &binding {
+            if data.is_none() {
+                return Ok(None);
+            }
+        }
+
         let value = binding.get_or_type(doc.name, line_number)?;
         let value = (value.1.to_owned(), value.2.to_owned());
-        ftd::executor::BackgroundPosition::from_values(value, doc, line_number)
+        Ok(Some(ftd::executor::BackgroundPosition::from_values(
+            value,
+            doc,
+            line_number,
+        )?))
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ftd::executor::BackgroundPosition> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_LEFT => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_LEFT => {
                 Ok(ftd::executor::BackgroundPosition::Left)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_CENTER => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_CENTER => {
                 Ok(ftd::executor::BackgroundPosition::Center)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_RIGHT => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_RIGHT => {
                 Ok(ftd::executor::BackgroundPosition::Right)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_LEFT_TOP => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_LEFT_TOP => {
                 Ok(ftd::executor::BackgroundPosition::LeftTop)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_LEFT_CENTER => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_LEFT_CENTER => {
                 Ok(ftd::executor::BackgroundPosition::LeftCenter)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_LEFT_BOTTOM => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_LEFT_BOTTOM => {
                 Ok(ftd::executor::BackgroundPosition::LeftBottom)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_CENTER_TOP => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_CENTER_TOP => {
                 Ok(ftd::executor::BackgroundPosition::CenterTop)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_CENTER_CENTER => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_CENTER_CENTER => {
                 Ok(ftd::executor::BackgroundPosition::CenterCenter)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_CENTER_BOTTOM => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_CENTER_BOTTOM => {
                 Ok(ftd::executor::BackgroundPosition::CenterBottom)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_RIGHT_TOP => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_RIGHT_TOP => {
                 Ok(ftd::executor::BackgroundPosition::RightTop)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_RIGHT_CENTER => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_RIGHT_CENTER => {
                 Ok(ftd::executor::BackgroundPosition::RightCenter)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_RIGHT_BOTTOM => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_RIGHT_BOTTOM => {
                 Ok(ftd::executor::BackgroundPosition::RightBottom)
             }
-            ftd::interpreter2::FTD_BACKGROUND_POSITION_LENGTH => {
+            ftd::interpreter::FTD_BACKGROUND_POSITION_LENGTH => {
                 Ok(ftd::executor::BackgroundPosition::Length(
                     LengthPair::from_value(or_type_value.1, doc, line_number)?,
                 ))
@@ -1410,7 +1751,7 @@ impl BackgroundPosition {
         }
     }
 
-    pub fn to_css_string(&self) -> String {
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
             ftd::executor::BackgroundPosition::Left => "left".to_string(),
             ftd::executor::BackgroundPosition::Center => "center".to_string(),
@@ -1424,7 +1765,7 @@ impl BackgroundPosition {
             ftd::executor::BackgroundPosition::RightTop => "right top".to_string(),
             ftd::executor::BackgroundPosition::RightCenter => "right center".to_string(),
             ftd::executor::BackgroundPosition::RightBottom => "right bottom".to_string(),
-            ftd::executor::BackgroundPosition::Length(l) => l.to_css_string(),
+            ftd::executor::BackgroundPosition::Length(l) => l.to_css_string(device),
         }
     }
 }
@@ -1441,7 +1782,7 @@ pub struct Shadow {
 
 impl Shadow {
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ftd::executor::Shadow> {
@@ -1459,35 +1800,35 @@ impl Shadow {
             Length::from_value(get_property_value("x-offset")?.clone(), doc, line_number)?,
             Some(line_number),
             vec![get_property_value("x-offset")?
-                .into_property(ftd::interpreter2::PropertySource::header("x-offset"))],
+                .into_property(ftd::interpreter::PropertySource::header("x-offset"))],
         );
 
         let y_offset = ftd::executor::Value::new(
             Length::from_value(get_property_value("y-offset")?.clone(), doc, line_number)?,
             Some(line_number),
             vec![get_property_value("y-offset")?
-                .into_property(ftd::interpreter2::PropertySource::header("y-offset"))],
+                .into_property(ftd::interpreter::PropertySource::header("y-offset"))],
         );
 
         let blur = ftd::executor::Value::new(
             Length::from_value(get_property_value("blur")?.clone(), doc, line_number)?,
             Some(line_number),
             vec![get_property_value("blur")?
-                .into_property(ftd::interpreter2::PropertySource::header("blur"))],
+                .into_property(ftd::interpreter::PropertySource::header("blur"))],
         );
 
         let spread = ftd::executor::Value::new(
             Length::from_value(get_property_value("spread")?.clone(), doc, line_number)?,
             Some(line_number),
             vec![get_property_value("spread")?
-                .into_property(ftd::interpreter2::PropertySource::header("spread"))],
+                .into_property(ftd::interpreter::PropertySource::header("spread"))],
         );
 
         let color = ftd::executor::Value::new(
             Color::from_value(get_property_value("color")?.clone(), doc, line_number)?,
             Some(line_number),
             vec![get_property_value("color")?
-                .into_property(ftd::interpreter2::PropertySource::header("color"))],
+                .into_property(ftd::interpreter::PropertySource::header("color"))],
         );
 
         let inset = ftd::executor::Value::new(
@@ -1497,7 +1838,7 @@ impl Shadow {
                 .bool(doc.name, line_number)?,
             Some(line_number),
             vec![get_property_value("inset")?
-                .into_property(ftd::interpreter2::PropertySource::header("inset"))],
+                .into_property(ftd::interpreter::PropertySource::header("inset"))],
         );
 
         Ok(ftd::executor::Shadow {
@@ -1511,7 +1852,7 @@ impl Shadow {
     }
 
     fn from_optional_values(
-        or_type_value: Option<ftd::Map<ftd::interpreter2::PropertyValue>>,
+        or_type_value: Option<ftd::Map<ftd::interpreter::PropertyValue>>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<ftd::executor::Shadow>> {
@@ -1527,8 +1868,8 @@ impl Shadow {
     }
 
     pub(crate) fn optional_shadow(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -1542,7 +1883,7 @@ impl Shadow {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_SHADOW,
+            ftd::interpreter::FTD_SHADOW,
             inherited_variables,
         )?;
 
@@ -1553,11 +1894,11 @@ impl Shadow {
         ))
     }
 
-    pub fn to_css_string(&self) -> String {
-        let x_offset = self.x_offset.value.to_css_string();
-        let y_offset = self.y_offset.value.to_css_string();
-        let blur = self.blur.value.to_css_string();
-        let spread = self.spread.value.to_css_string();
+    pub fn to_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
+        let x_offset = self.x_offset.value.to_css_string(device);
+        let y_offset = self.y_offset.value.to_css_string(device);
+        let blur = self.blur.value.to_css_string(device);
+        let spread = self.spread.value.to_css_string(device);
         let inset = match self.inset.value {
             true => "inset".to_string(),
             false => "".to_string(),
@@ -1572,51 +1913,7 @@ impl Shadow {
 
     pub fn box_shadow_pattern() -> (String, bool) {
         (
-            r#"
-                let shadow = {0};
-                if (typeof shadow === 'object') {
-                var inset, blur, spread, x_off, y_off, color;
-                inset = "";
-                blur = spread = x_off = y_off = "0px";
-                color = "black";
-
-                if ("inset" in shadow) {
-                    if (shadow.inset) {
-                        inset = "inset";
-                    }
-                }
-
-                if ("blur" in shadow) {
-                    blur = shadow.blur;
-                }
-                if ("spread" in shadow) {
-                    spread = shadow.spread;
-                }
-                if ("x-offset" in shadow) {
-                    x_off = shadow["x-offset"];
-                }
-                if ("y-offset" in shadow) {
-                    y_off = shadow["y-offset"];
-                }
-
-                if ("color" in shadow) {
-                    if (data["ftd#dark-mode"]){
-                        color = shadow.color.dark;
-                    }
-                    else {
-                        color = shadow.color.light;
-                    }
-                }
-
-                // inset, color, x_offset, y_offset, blur, spread
-                let res = inset + " " + color + " " + x_off + " " + y_off + " " + blur + " " + spread;
-                res = res.trim();
-                res
-            }
-            else {
-                null
-            }
-            "#.to_string(),
+            "window.ftd.dependencies.eval_box_shadow({0}, data)".to_string(),
             true,
         )
     }
@@ -1630,14 +1927,14 @@ pub struct Color {
 
 impl Color {
     fn from_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Color> {
         let value = value.resolve(&doc.itdoc(), line_number)?;
         let fields = match value.inner() {
-            Some(ftd::interpreter2::Value::Record { name, fields })
-                if name.eq(ftd::interpreter2::FTD_COLOR) =>
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_COLOR) =>
             {
                 fields
             }
@@ -1645,7 +1942,7 @@ impl Color {
                 return ftd::executor::utils::parse_error(
                     format!(
                         "Expected value of type record `{}`, found: {:?}",
-                        ftd::interpreter2::FTD_COLOR,
+                        ftd::interpreter::FTD_COLOR,
                         t
                     ),
                     doc.name,
@@ -1657,7 +1954,7 @@ impl Color {
     }
 
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Color> {
@@ -1679,7 +1976,7 @@ impl Color {
                     line_number,
                 )?,
                 Some(line_number),
-                vec![value.into_property(ftd::interpreter2::PropertySource::header("light"))],
+                vec![value.into_property(ftd::interpreter::PropertySource::header("light"))],
             )
         };
 
@@ -1695,7 +1992,7 @@ impl Color {
                         line_number,
                     )?,
                     Some(line_number),
-                    vec![value.into_property(ftd::interpreter2::PropertySource::header("dark"))],
+                    vec![value.into_property(ftd::interpreter::PropertySource::header("dark"))],
                 )
             } else {
                 light.clone()
@@ -1706,7 +2003,7 @@ impl Color {
     }
 
     fn from_optional_values(
-        or_type_value: Option<ftd::Map<ftd::interpreter2::PropertyValue>>,
+        or_type_value: Option<ftd::Map<ftd::interpreter::PropertyValue>>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Color>> {
@@ -1718,8 +2015,8 @@ impl Color {
     }
 
     pub(crate) fn optional_color(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -1733,7 +2030,7 @@ impl Color {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_COLOR,
+            ftd::interpreter::FTD_COLOR,
             inherited_variables,
         )?;
 
@@ -1752,7 +2049,7 @@ impl Color {
         (
             r#"
                 let c = {0};
-                if (typeof c === 'object' && "light" in c) {
+                if (typeof c === 'object' && !!c && "light" in c) {
                     if (data["ftd#dark-mode"] && "dark" in c){ c.dark } else { c.light }
                 } else {
                     c
@@ -1853,7 +2150,7 @@ pub enum Spacing {
 
 impl Spacing {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -1865,15 +2162,15 @@ impl Spacing {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_SPACING_SPACE_BETWEEN => Ok(Spacing::SpaceBetween),
-            ftd::interpreter2::FTD_SPACING_SPACE_EVENLY => Ok(Spacing::SpaceEvenly),
-            ftd::interpreter2::FTD_SPACING_SPACE_AROUND => Ok(Spacing::SpaceAround),
-            ftd::interpreter2::FTD_SPACING_FIXED => Ok(Spacing::Fixed(Length::from_value(
+            ftd::interpreter::FTD_SPACING_SPACE_BETWEEN => Ok(Spacing::SpaceBetween),
+            ftd::interpreter::FTD_SPACING_SPACE_EVENLY => Ok(Spacing::SpaceEvenly),
+            ftd::interpreter::FTD_SPACING_SPACE_AROUND => Ok(Spacing::SpaceAround),
+            ftd::interpreter::FTD_SPACING_FIXED => Ok(Spacing::Fixed(Length::from_value(
                 or_type_value.1.to_owned(),
                 doc,
                 line_number,
@@ -1887,8 +2184,8 @@ impl Spacing {
     }
 
     pub(crate) fn optional_spacing_mode(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -1902,7 +2199,7 @@ impl Spacing {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_SPACING,
+            ftd::interpreter::FTD_SPACING,
             inherited_variables,
         )?;
 
@@ -1913,18 +2210,9 @@ impl Spacing {
         ))
     }
 
-    pub fn to_css_string(&self) -> String {
+    pub fn to_gap_css_string(&self, device: &Option<ftd::executor::Device>) -> String {
         match self {
-            Spacing::SpaceBetween => "space-between".to_string(),
-            Spacing::SpaceEvenly => "space-evenly".to_string(),
-            Spacing::SpaceAround => "space-around".to_string(),
-            Spacing::Fixed(f) => f.to_css_string(),
-        }
-    }
-
-    pub fn to_gap_css_string(&self) -> String {
-        match self {
-            Spacing::Fixed(f) => f.to_css_string(),
+            Spacing::Fixed(f) => f.to_css_string(device),
             _ => "0".to_string(),
         }
     }
@@ -1934,20 +2222,20 @@ impl Spacing {
             Spacing::SpaceBetween => "space-between".to_string(),
             Spacing::SpaceEvenly => "space-evenly".to_string(),
             Spacing::SpaceAround => "space-around".to_string(),
-            Spacing::Fixed(_) => "start".to_string(),
+            Spacing::Fixed(_) => "unset".to_string(),
         }
     }
 
     pub fn justify_content_pattern() -> (String, bool) {
         (
             indoc::indoc! {"
-                if (\"{0}\" == \"space-between\" || \"{0}\" == \"space-around\" || \"{0}\" == \"space-evenly\") {
-                    \"{0}\"
+                if ({0} == \"space-between\" || {0} == \"space-around\" || {0} == \"space-evenly\") {
+                    {0}
                 } else {
                     \"start\"
                 }
             "}
-            .to_string(),
+                .to_string(),
             true,
         )
     }
@@ -1955,8 +2243,8 @@ impl Spacing {
     pub fn fixed_content_pattern() -> (String, bool) {
         (
             indoc::indoc! {"
-                if (\"{0}\" != \"space-between\" && \"{0}\" != \"space_around\" && \"{0}\" != \"space-evenly\") {
-                    \"{0}\"
+                if ({0} != \"space-between\" && {0} != \"space_around\" && {0} != \"space-evenly\") {
+                    {0}
                 } else {
                     null
                 }
@@ -1975,7 +2263,7 @@ pub enum AlignSelf {
 
 impl AlignSelf {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -1987,14 +2275,14 @@ impl AlignSelf {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_ALIGN_SELF_START => Ok(AlignSelf::Start),
-            ftd::interpreter2::FTD_ALIGN_SELF_CENTER => Ok(AlignSelf::Center),
-            ftd::interpreter2::FTD_ALIGN_SELF_END => Ok(AlignSelf::End),
+            ftd::interpreter::FTD_ALIGN_SELF_START => Ok(AlignSelf::Start),
+            ftd::interpreter::FTD_ALIGN_SELF_CENTER => Ok(AlignSelf::Center),
+            ftd::interpreter::FTD_ALIGN_SELF_END => Ok(AlignSelf::End),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.align-self`", t),
                 doc.name,
@@ -2004,8 +2292,8 @@ impl AlignSelf {
     }
 
     pub(crate) fn optional_align_self(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2019,7 +2307,7 @@ impl AlignSelf {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_ALIGN_SELF,
+            ftd::interpreter::FTD_ALIGN_SELF,
             inherited_variables,
         )?;
 
@@ -2049,7 +2337,7 @@ pub enum Overflow {
 
 impl Overflow {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2061,15 +2349,15 @@ impl Overflow {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_OVERFLOW_SCROLL => Ok(Overflow::Scroll),
-            ftd::interpreter2::FTD_OVERFLOW_VISIBLE => Ok(Overflow::Visible),
-            ftd::interpreter2::FTD_OVERFLOW_HIDDEN => Ok(Overflow::Hidden),
-            ftd::interpreter2::FTD_OVERFLOW_AUTO => Ok(Overflow::Auto),
+            ftd::interpreter::FTD_OVERFLOW_SCROLL => Ok(Overflow::Scroll),
+            ftd::interpreter::FTD_OVERFLOW_VISIBLE => Ok(Overflow::Visible),
+            ftd::interpreter::FTD_OVERFLOW_HIDDEN => Ok(Overflow::Hidden),
+            ftd::interpreter::FTD_OVERFLOW_AUTO => Ok(Overflow::Auto),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.overflow`", t),
                 doc.name,
@@ -2079,8 +2367,8 @@ impl Overflow {
     }
 
     pub(crate) fn optional_overflow(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2094,7 +2382,7 @@ impl Overflow {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_OVERFLOW,
+            ftd::interpreter::FTD_OVERFLOW,
             inherited_variables,
         )?;
 
@@ -2124,7 +2412,7 @@ pub enum Resize {
 
 impl Resize {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2136,14 +2424,14 @@ impl Resize {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_RESIZE_HORIZONTAL => Ok(Resize::Horizontal),
-            ftd::interpreter2::FTD_RESIZE_VERTICAL => Ok(Resize::Vertical),
-            ftd::interpreter2::FTD_RESIZE_BOTH => Ok(Resize::Both),
+            ftd::interpreter::FTD_RESIZE_HORIZONTAL => Ok(Resize::Horizontal),
+            ftd::interpreter::FTD_RESIZE_VERTICAL => Ok(Resize::Vertical),
+            ftd::interpreter::FTD_RESIZE_BOTH => Ok(Resize::Both),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.resize`", t),
                 doc.name,
@@ -2153,8 +2441,8 @@ impl Resize {
     }
 
     pub(crate) fn optional_resize(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2168,7 +2456,7 @@ impl Resize {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_RESIZE,
+            ftd::interpreter::FTD_RESIZE,
             inherited_variables,
         )?;
 
@@ -2198,7 +2486,7 @@ pub enum TextAlign {
 
 impl TextAlign {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2210,15 +2498,15 @@ impl TextAlign {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_TEXT_ALIGN_START => Ok(TextAlign::Start),
-            ftd::interpreter2::FTD_TEXT_ALIGN_CENTER => Ok(TextAlign::Center),
-            ftd::interpreter2::FTD_TEXT_ALIGN_END => Ok(TextAlign::End),
-            ftd::interpreter2::FTD_TEXT_ALIGN_JUSTIFY => Ok(TextAlign::Justify),
+            ftd::interpreter::FTD_TEXT_ALIGN_START => Ok(TextAlign::Start),
+            ftd::interpreter::FTD_TEXT_ALIGN_CENTER => Ok(TextAlign::Center),
+            ftd::interpreter::FTD_TEXT_ALIGN_END => Ok(TextAlign::End),
+            ftd::interpreter::FTD_TEXT_ALIGN_JUSTIFY => Ok(TextAlign::Justify),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.text-align`", t),
                 doc.name,
@@ -2228,8 +2516,8 @@ impl TextAlign {
     }
 
     pub(crate) fn optional_text_align(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2243,7 +2531,7 @@ impl TextAlign {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_TEXT_ALIGN,
+            ftd::interpreter::FTD_TEXT_ALIGN,
             inherited_variables,
         )?;
 
@@ -2305,7 +2593,7 @@ pub enum Cursor {
 
 impl Cursor {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2317,46 +2605,46 @@ impl Cursor {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_CURSOR_DEFAULT => Ok(Cursor::Default),
-            ftd::interpreter2::FTD_CURSOR_NONE => Ok(Cursor::None),
-            ftd::interpreter2::FTD_CURSOR_CONTEXT_MENU => Ok(Cursor::ContextMenu),
-            ftd::interpreter2::FTD_CURSOR_HELP => Ok(Cursor::Help),
-            ftd::interpreter2::FTD_CURSOR_POINTER => Ok(Cursor::Pointer),
-            ftd::interpreter2::FTD_CURSOR_PROGRESS => Ok(Cursor::Progress),
-            ftd::interpreter2::FTD_CURSOR_WAIT => Ok(Cursor::Wait),
-            ftd::interpreter2::FTD_CURSOR_CELL => Ok(Cursor::Cell),
-            ftd::interpreter2::FTD_CURSOR_CROSSHAIR => Ok(Cursor::CrossHair),
-            ftd::interpreter2::FTD_CURSOR_TEXT => Ok(Cursor::Text),
-            ftd::interpreter2::FTD_CURSOR_VERTICAL_TEXT => Ok(Cursor::VerticalText),
-            ftd::interpreter2::FTD_CURSOR_ALIAS => Ok(Cursor::Alias),
-            ftd::interpreter2::FTD_CURSOR_COPY => Ok(Cursor::Copy),
-            ftd::interpreter2::FTD_CURSOR_MOVE => Ok(Cursor::Move),
-            ftd::interpreter2::FTD_CURSOR_NO_DROP => Ok(Cursor::NoDrop),
-            ftd::interpreter2::FTD_CURSOR_NOT_ALLOWED => Ok(Cursor::NotAllowed),
-            ftd::interpreter2::FTD_CURSOR_GRAB => Ok(Cursor::Grab),
-            ftd::interpreter2::FTD_CURSOR_GRABBING => Ok(Cursor::Grabbing),
-            ftd::interpreter2::FTD_CURSOR_E_RESIZE => Ok(Cursor::EResize),
-            ftd::interpreter2::FTD_CURSOR_N_RESIZE => Ok(Cursor::NResize),
-            ftd::interpreter2::FTD_CURSOR_NE_RESIZE => Ok(Cursor::NeResize),
-            ftd::interpreter2::FTD_CURSOR_NW_RESIZE => Ok(Cursor::NwResize),
-            ftd::interpreter2::FTD_CURSOR_S_RESIZE => Ok(Cursor::SResize),
-            ftd::interpreter2::FTD_CURSOR_SE_RESIZE => Ok(Cursor::SeResize),
-            ftd::interpreter2::FTD_CURSOR_SW_RESIZE => Ok(Cursor::SwResize),
-            ftd::interpreter2::FTD_CURSOR_W_RESIZE => Ok(Cursor::WResize),
-            ftd::interpreter2::FTD_CURSOR_EW_RESIZE => Ok(Cursor::EwResize),
-            ftd::interpreter2::FTD_CURSOR_NS_RESIZE => Ok(Cursor::NsResize),
-            ftd::interpreter2::FTD_CURSOR_NESW_RESIZE => Ok(Cursor::NeswResize),
-            ftd::interpreter2::FTD_CURSOR_NWSE_RESIZE => Ok(Cursor::NwseResize),
-            ftd::interpreter2::FTD_CURSOR_COL_RESIZE => Ok(Cursor::ColResize),
-            ftd::interpreter2::FTD_CURSOR_ROW_RESIZE => Ok(Cursor::RowResize),
-            ftd::interpreter2::FTD_CURSOR_ALL_SCROLL => Ok(Cursor::AllScroll),
-            ftd::interpreter2::FTD_CURSOR_ZOOM_IN => Ok(Cursor::ZoomIn),
-            ftd::interpreter2::FTD_CURSOR_ZOOM_OUT => Ok(Cursor::ZoomOut),
+            ftd::interpreter::FTD_CURSOR_DEFAULT => Ok(Cursor::Default),
+            ftd::interpreter::FTD_CURSOR_NONE => Ok(Cursor::None),
+            ftd::interpreter::FTD_CURSOR_CONTEXT_MENU => Ok(Cursor::ContextMenu),
+            ftd::interpreter::FTD_CURSOR_HELP => Ok(Cursor::Help),
+            ftd::interpreter::FTD_CURSOR_POINTER => Ok(Cursor::Pointer),
+            ftd::interpreter::FTD_CURSOR_PROGRESS => Ok(Cursor::Progress),
+            ftd::interpreter::FTD_CURSOR_WAIT => Ok(Cursor::Wait),
+            ftd::interpreter::FTD_CURSOR_CELL => Ok(Cursor::Cell),
+            ftd::interpreter::FTD_CURSOR_CROSSHAIR => Ok(Cursor::CrossHair),
+            ftd::interpreter::FTD_CURSOR_TEXT => Ok(Cursor::Text),
+            ftd::interpreter::FTD_CURSOR_VERTICAL_TEXT => Ok(Cursor::VerticalText),
+            ftd::interpreter::FTD_CURSOR_ALIAS => Ok(Cursor::Alias),
+            ftd::interpreter::FTD_CURSOR_COPY => Ok(Cursor::Copy),
+            ftd::interpreter::FTD_CURSOR_MOVE => Ok(Cursor::Move),
+            ftd::interpreter::FTD_CURSOR_NO_DROP => Ok(Cursor::NoDrop),
+            ftd::interpreter::FTD_CURSOR_NOT_ALLOWED => Ok(Cursor::NotAllowed),
+            ftd::interpreter::FTD_CURSOR_GRAB => Ok(Cursor::Grab),
+            ftd::interpreter::FTD_CURSOR_GRABBING => Ok(Cursor::Grabbing),
+            ftd::interpreter::FTD_CURSOR_E_RESIZE => Ok(Cursor::EResize),
+            ftd::interpreter::FTD_CURSOR_N_RESIZE => Ok(Cursor::NResize),
+            ftd::interpreter::FTD_CURSOR_NE_RESIZE => Ok(Cursor::NeResize),
+            ftd::interpreter::FTD_CURSOR_NW_RESIZE => Ok(Cursor::NwResize),
+            ftd::interpreter::FTD_CURSOR_S_RESIZE => Ok(Cursor::SResize),
+            ftd::interpreter::FTD_CURSOR_SE_RESIZE => Ok(Cursor::SeResize),
+            ftd::interpreter::FTD_CURSOR_SW_RESIZE => Ok(Cursor::SwResize),
+            ftd::interpreter::FTD_CURSOR_W_RESIZE => Ok(Cursor::WResize),
+            ftd::interpreter::FTD_CURSOR_EW_RESIZE => Ok(Cursor::EwResize),
+            ftd::interpreter::FTD_CURSOR_NS_RESIZE => Ok(Cursor::NsResize),
+            ftd::interpreter::FTD_CURSOR_NESW_RESIZE => Ok(Cursor::NeswResize),
+            ftd::interpreter::FTD_CURSOR_NWSE_RESIZE => Ok(Cursor::NwseResize),
+            ftd::interpreter::FTD_CURSOR_COL_RESIZE => Ok(Cursor::ColResize),
+            ftd::interpreter::FTD_CURSOR_ROW_RESIZE => Ok(Cursor::RowResize),
+            ftd::interpreter::FTD_CURSOR_ALL_SCROLL => Ok(Cursor::AllScroll),
+            ftd::interpreter::FTD_CURSOR_ZOOM_IN => Ok(Cursor::ZoomIn),
+            ftd::interpreter::FTD_CURSOR_ZOOM_OUT => Ok(Cursor::ZoomOut),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.cursor`", t),
                 doc.name,
@@ -2366,8 +2654,8 @@ impl Cursor {
     }
 
     pub(crate) fn optional_cursor(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2381,7 +2669,7 @@ impl Cursor {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_CURSOR,
+            ftd::interpreter::FTD_CURSOR,
             inherited_variables,
         )?;
 
@@ -2448,18 +2736,18 @@ impl Default for FontSize {
 
 impl FontSize {
     fn from_optional_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<FontSize>> {
         let value = value.resolve(&doc.itdoc(), line_number)?;
         match value.inner() {
-            Some(ftd::interpreter2::Value::OrType {
+            Some(ftd::interpreter::Value::OrType {
                 name,
                 variant,
                 value,
                 ..
-            }) if name.eq(ftd::interpreter2::FTD_FONT_SIZE) => Ok(Some(FontSize::from_values(
+            }) if name.eq(ftd::interpreter::FTD_FONT_SIZE) => Ok(Some(FontSize::from_values(
                 (variant, value.as_ref().to_owned()),
                 doc,
                 line_number,
@@ -2468,7 +2756,7 @@ impl FontSize {
             t => ftd::executor::utils::parse_error(
                 format!(
                     "Expected value of font-size or-type `{}`, found: {:?}",
-                    ftd::interpreter2::FTD_FONT_SIZE,
+                    ftd::interpreter::FTD_FONT_SIZE,
                     t
                 ),
                 doc.name,
@@ -2478,26 +2766,26 @@ impl FontSize {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_FONT_SIZE_PX => Ok(FontSize::Px(
+            ftd::interpreter::FTD_FONT_SIZE_PX => Ok(FontSize::Px(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .integer(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_FONT_SIZE_EM => Ok(FontSize::Em(
+            ftd::interpreter::FTD_FONT_SIZE_EM => Ok(FontSize::Em(
                 or_type_value
                     .1
                     .clone()
                     .resolve(&doc.itdoc(), line_number)?
                     .decimal(doc.name, line_number)?,
             )),
-            ftd::interpreter2::FTD_FONT_SIZE_REM => Ok(FontSize::Rem(
+            ftd::interpreter::FTD_FONT_SIZE_REM => Ok(FontSize::Rem(
                 or_type_value
                     .1
                     .clone()
@@ -2526,9 +2814,9 @@ impl FontSize {
         line_number: usize,
     ) -> ftd::executor::Result<&'static str> {
         match variant {
-            ftd::interpreter2::FTD_FONT_SIZE_PX
-            | ftd::interpreter2::FTD_FONT_SIZE_EM
-            | ftd::interpreter2::FTD_FONT_SIZE_REM => Ok("{0}"),
+            ftd::interpreter::FTD_FONT_SIZE_PX
+            | ftd::interpreter::FTD_FONT_SIZE_EM
+            | ftd::interpreter::FTD_FONT_SIZE_REM => Ok("{0}"),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.font-size: `{}`", t),
                 doc_id,
@@ -2543,9 +2831,9 @@ impl FontSize {
         line_number: usize,
     ) -> ftd::executor::Result<&'static str> {
         match variant {
-            ftd::interpreter2::FTD_FONT_SIZE_PX => Ok("{0}px"),
-            ftd::interpreter2::FTD_FONT_SIZE_EM => Ok("{0}em"),
-            ftd::interpreter2::FTD_FONT_SIZE_REM => Ok("{0}rem"),
+            ftd::interpreter::FTD_FONT_SIZE_PX => Ok("{0}px"),
+            ftd::interpreter::FTD_FONT_SIZE_EM => Ok("{0}em"),
+            ftd::interpreter::FTD_FONT_SIZE_REM => Ok("{0}rem"),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.font-size: `{}`", t),
                 doc_id,
@@ -2561,9 +2849,9 @@ impl FontSize {
         line_number: usize,
     ) -> ftd::executor::Result<String> {
         match variant {
-            ftd::interpreter2::FTD_FONT_SIZE_PX => Ok(format!("{}px", value)),
-            ftd::interpreter2::FTD_FONT_SIZE_EM => Ok(format!("{}em", value)),
-            ftd::interpreter2::FTD_FONT_SIZE_REM => Ok(format!("{}rem", value)),
+            ftd::interpreter::FTD_FONT_SIZE_PX => Ok(format!("{}px", value)),
+            ftd::interpreter::FTD_FONT_SIZE_EM => Ok(format!("{}em", value)),
+            ftd::interpreter::FTD_FONT_SIZE_REM => Ok(format!("{}rem", value)),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant found for ftd.font-size: `{}`", t),
                 doc_id,
@@ -2579,7 +2867,7 @@ pub struct Type {
     pub line_height: Option<FontSize>,
     pub letter_spacing: Option<FontSize>,
     pub weight: Option<i64>,
-    pub font_family: Option<String>,
+    pub font_family: Option<Vec<String>>,
 }
 
 impl Type {
@@ -2588,7 +2876,7 @@ impl Type {
         line_height: Option<FontSize>,
         letter_spacing: Option<FontSize>,
         weight: Option<i64>,
-        font_family: Option<String>,
+        font_family: Option<Vec<String>>,
     ) -> Type {
         Type {
             size,
@@ -2600,14 +2888,14 @@ impl Type {
     }
 
     fn from_value(
-        value: ftd::interpreter2::PropertyValue,
+        value: ftd::interpreter::PropertyValue,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Type> {
         let value = value.resolve(&doc.itdoc(), line_number)?;
         let fields = match value.inner() {
-            Some(ftd::interpreter2::Value::Record { name, fields })
-                if name.eq(ftd::interpreter2::FTD_TYPE) =>
+            Some(ftd::interpreter::Value::Record { name, fields })
+                if name.eq(ftd::interpreter::FTD_TYPE) =>
             {
                 fields
             }
@@ -2615,7 +2903,7 @@ impl Type {
                 return ftd::executor::utils::parse_error(
                     format!(
                         "Expected value of type record `{}`, found: {:?}",
-                        ftd::interpreter2::FTD_COLOR,
+                        ftd::interpreter::FTD_COLOR,
                         t
                     ),
                     doc.name,
@@ -2627,7 +2915,7 @@ impl Type {
     }
 
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Type> {
@@ -2668,10 +2956,12 @@ impl Type {
 
         let font_family = {
             if let Some(value) = values.get("font-family") {
-                value
-                    .clone()
-                    .resolve(&doc.itdoc(), line_number)?
-                    .optional_string(doc.name, line_number)?
+                Some(
+                    value
+                        .clone()
+                        .resolve(&doc.itdoc(), line_number)?
+                        .string_list(&doc.itdoc(), line_number)?,
+                )
             } else {
                 None
             }
@@ -2695,7 +2985,7 @@ pub struct ResponsiveType {
 
 impl ResponsiveType {
     fn from_values(
-        values: ftd::Map<ftd::interpreter2::PropertyValue>,
+        values: ftd::Map<ftd::interpreter::PropertyValue>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<ResponsiveType> {
@@ -2722,7 +3012,7 @@ impl ResponsiveType {
     }
 
     fn from_optional_values(
-        or_type_value: Option<ftd::Map<ftd::interpreter2::PropertyValue>>,
+        or_type_value: Option<ftd::Map<ftd::interpreter::PropertyValue>>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2734,8 +3024,8 @@ impl ResponsiveType {
     }
 
     pub(crate) fn optional_responsive_type(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2749,7 +3039,7 @@ impl ResponsiveType {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_RESPONSIVE_TYPE,
+            ftd::interpreter::FTD_RESPONSIVE_TYPE,
             inherited_variables,
         )?;
 
@@ -2760,35 +3050,58 @@ impl ResponsiveType {
         ))
     }
 
-    pub fn to_css_font_size(&self) -> Option<String> {
-        self.desktop.size.as_ref().map(|v| v.to_css_string())
+    pub fn to_css_font_size(&self, device: &Option<ftd::executor::Device>) -> Option<String> {
+        match device {
+            Some(ftd::executor::Device::Mobile) => {
+                self.mobile.size.as_ref().map(|v| v.to_css_string())
+            }
+            _ => self.desktop.size.as_ref().map(|v| v.to_css_string()),
+        }
     }
 
     pub fn font_size_pattern() -> (String, bool) {
         ("({0})[\"size\"]".to_string(), true)
     }
 
-    pub fn to_css_line_height(&self) -> Option<String> {
-        self.desktop.line_height.as_ref().map(|v| v.to_css_string())
+    pub fn to_css_line_height(&self, device: &Option<ftd::executor::Device>) -> Option<String> {
+        match device {
+            Some(ftd::executor::Device::Mobile) => {
+                self.mobile.line_height.as_ref().map(|v| v.to_css_string())
+            }
+            _ => self.desktop.line_height.as_ref().map(|v| v.to_css_string()),
+        }
     }
 
     pub fn line_height_pattern() -> (String, bool) {
         ("({0})[\"line-height\"]".to_string(), true)
     }
 
-    pub fn to_css_letter_spacing(&self) -> Option<String> {
-        self.desktop
-            .letter_spacing
-            .as_ref()
-            .map(|v| v.to_css_string())
+    pub fn to_css_letter_spacing(&self, device: &Option<ftd::executor::Device>) -> Option<String> {
+        match device {
+            Some(ftd::executor::Device::Mobile) => self
+                .mobile
+                .letter_spacing
+                .as_ref()
+                .map(|v| v.to_css_string()),
+            _ => self
+                .desktop
+                .letter_spacing
+                .as_ref()
+                .map(|v| v.to_css_string()),
+        }
     }
 
     pub fn letter_spacing_pattern() -> (String, bool) {
         ("({0})[\"letter-spacing\"]".to_string(), true)
     }
 
-    pub fn to_css_weight(&self) -> Option<String> {
-        self.desktop.weight.as_ref().map(|v| v.to_string())
+    pub fn to_css_weight(&self, device: &Option<ftd::executor::Device>) -> Option<String> {
+        match device {
+            Some(ftd::executor::Device::Mobile) => {
+                self.mobile.weight.as_ref().map(|v| v.to_string())
+            }
+            _ => self.desktop.weight.as_ref().map(|v| v.to_string()),
+        }
     }
 
     pub fn weight_pattern() -> (String, bool) {
@@ -2796,7 +3109,10 @@ impl ResponsiveType {
     }
 
     pub fn to_css_font_family(&self) -> Option<String> {
-        self.desktop.font_family.to_owned()
+        if let Some(font_family) = self.desktop.font_family.as_ref() {
+            return Some(font_family.join(", "));
+        }
+        None
     }
 
     pub fn font_family_pattern() -> (String, bool) {
@@ -2813,7 +3129,7 @@ pub enum Anchor {
 
 impl Anchor {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2825,14 +3141,14 @@ impl Anchor {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_ANCHOR_WINDOW => Ok(Anchor::Window),
-            ftd::interpreter2::FTD_ANCHOR_PARENT => Ok(Anchor::Parent),
-            ftd::interpreter2::FTD_ANCHOR_ID => Ok(Anchor::Id(
+            ftd::interpreter::FTD_ANCHOR_WINDOW => Ok(Anchor::Window),
+            ftd::interpreter::FTD_ANCHOR_PARENT => Ok(Anchor::Parent),
+            ftd::interpreter::FTD_ANCHOR_ID => Ok(Anchor::Id(
                 or_type_value
                     .1
                     .clone()
@@ -2848,8 +3164,8 @@ impl Anchor {
     }
 
     pub(crate) fn optional_anchor(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2863,7 +3179,7 @@ impl Anchor {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_ANCHOR,
+            ftd::interpreter::FTD_ANCHOR,
             inherited_variables,
         )?;
 
@@ -2889,11 +3205,18 @@ pub enum TextInputType {
     EMAIL,
     PASSWORD,
     URL,
+    DATETIME,
+    DATE,
+    TIME,
+    MONTH,
+    WEEK,
+    COLOR,
+    FILE,
 }
 
 impl TextInputType {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2905,15 +3228,22 @@ impl TextInputType {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_TEXT_INPUT_TYPE_TEXT => Ok(TextInputType::TEXT),
-            ftd::interpreter2::FTD_TEXT_INPUT_TYPE_EMAIL => Ok(TextInputType::EMAIL),
-            ftd::interpreter2::FTD_TEXT_INPUT_TYPE_PASSWORD => Ok(TextInputType::PASSWORD),
-            ftd::interpreter2::FTD_TEXT_INPUT_TYPE_URL => Ok(TextInputType::URL),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_TEXT => Ok(TextInputType::TEXT),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_EMAIL => Ok(TextInputType::EMAIL),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_PASSWORD => Ok(TextInputType::PASSWORD),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_URL => Ok(TextInputType::URL),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_DATETIME => Ok(TextInputType::DATETIME),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_DATE => Ok(TextInputType::DATE),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_TIME => Ok(TextInputType::TIME),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_MONTH => Ok(TextInputType::MONTH),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_WEEK => Ok(TextInputType::WEEK),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_COLOR => Ok(TextInputType::COLOR),
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE_FILE => Ok(TextInputType::FILE),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.text-input-type`", t),
                 doc.name,
@@ -2923,8 +3253,8 @@ impl TextInputType {
     }
 
     pub(crate) fn optional_text_input_type(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -2938,7 +3268,7 @@ impl TextInputType {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_TEXT_INPUT_TYPE,
+            ftd::interpreter::FTD_TEXT_INPUT_TYPE,
             inherited_variables,
         )?;
 
@@ -2955,6 +3285,13 @@ impl TextInputType {
             TextInputType::EMAIL => "email".to_string(),
             TextInputType::PASSWORD => "password".to_string(),
             TextInputType::URL => "url".to_string(),
+            TextInputType::DATETIME => "datetime-local".to_string(),
+            TextInputType::DATE => "date".to_string(),
+            TextInputType::TIME => "time".to_string(),
+            TextInputType::MONTH => "month".to_string(),
+            TextInputType::WEEK => "week".to_string(),
+            TextInputType::COLOR => "color".to_string(),
+            TextInputType::FILE => "file".to_string(),
         }
     }
 }
@@ -2971,7 +3308,7 @@ pub enum Region {
 
 impl Region {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -2983,17 +3320,17 @@ impl Region {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_REGION_H1 => Ok(Region::H1),
-            ftd::interpreter2::FTD_REGION_H2 => Ok(Region::H2),
-            ftd::interpreter2::FTD_REGION_H3 => Ok(Region::H3),
-            ftd::interpreter2::FTD_REGION_H4 => Ok(Region::H4),
-            ftd::interpreter2::FTD_REGION_H5 => Ok(Region::H5),
-            ftd::interpreter2::FTD_REGION_H6 => Ok(Region::H6),
+            ftd::interpreter::FTD_REGION_H1 => Ok(Region::H1),
+            ftd::interpreter::FTD_REGION_H2 => Ok(Region::H2),
+            ftd::interpreter::FTD_REGION_H3 => Ok(Region::H3),
+            ftd::interpreter::FTD_REGION_H4 => Ok(Region::H4),
+            ftd::interpreter::FTD_REGION_H5 => Ok(Region::H5),
+            ftd::interpreter::FTD_REGION_H6 => Ok(Region::H6),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.region`", t),
                 doc.name,
@@ -3003,8 +3340,8 @@ impl Region {
     }
 
     pub(crate) fn optional_region(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -3018,7 +3355,7 @@ impl Region {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_REGION,
+            ftd::interpreter::FTD_REGION,
             inherited_variables,
         )?;
 
@@ -3059,7 +3396,7 @@ pub enum WhiteSpace {
 
 impl WhiteSpace {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -3071,17 +3408,17 @@ impl WhiteSpace {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_WHITESPACE_NORMAL => Ok(WhiteSpace::NORMAL),
-            ftd::interpreter2::FTD_WHITESPACE_NOWRAP => Ok(WhiteSpace::NOWRAP),
-            ftd::interpreter2::FTD_WHITESPACE_PRE => Ok(WhiteSpace::PRE),
-            ftd::interpreter2::FTD_WHITESPACE_PREWRAP => Ok(WhiteSpace::PREWRAP),
-            ftd::interpreter2::FTD_WHITESPACE_PRELINE => Ok(WhiteSpace::PRELINE),
-            ftd::interpreter2::FTD_WHITESPACE_BREAKSPACES => Ok(WhiteSpace::BREAKSPACES),
+            ftd::interpreter::FTD_WHITESPACE_NORMAL => Ok(WhiteSpace::NORMAL),
+            ftd::interpreter::FTD_WHITESPACE_NOWRAP => Ok(WhiteSpace::NOWRAP),
+            ftd::interpreter::FTD_WHITESPACE_PRE => Ok(WhiteSpace::PRE),
+            ftd::interpreter::FTD_WHITESPACE_PREWRAP => Ok(WhiteSpace::PREWRAP),
+            ftd::interpreter::FTD_WHITESPACE_PRELINE => Ok(WhiteSpace::PRELINE),
+            ftd::interpreter::FTD_WHITESPACE_BREAKSPACES => Ok(WhiteSpace::BREAKSPACES),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.whitespace`", t),
                 doc.name,
@@ -3091,8 +3428,8 @@ impl WhiteSpace {
     }
 
     pub(crate) fn optional_whitespace(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -3106,7 +3443,7 @@ impl WhiteSpace {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_WHITESPACE,
+            ftd::interpreter::FTD_WHITESPACE,
             inherited_variables,
         )?;
 
@@ -3125,6 +3462,83 @@ impl WhiteSpace {
             WhiteSpace::PRELINE => "pre-line".to_string(),
             WhiteSpace::PREWRAP => "pre-wrap".to_string(),
             WhiteSpace::BREAKSPACES => "break-spaces".to_string(),
+        }
+    }
+}
+
+#[derive(serde::Deserialize, Debug, PartialEq, Clone, serde::Serialize)]
+pub enum Display {
+    Block,
+    Inline,
+    InlineBlock,
+}
+
+impl Display {
+    fn from_optional_values(
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Option<ftd::executor::Display>> {
+        if let Some(value) = or_type_value {
+            Ok(Some(ftd::executor::Display::from_values(
+                value,
+                doc,
+                line_number,
+            )?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn from_values(
+        or_type_value: (String, ftd::interpreter::PropertyValue),
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<ftd::executor::Display> {
+        match or_type_value.0.as_str() {
+            ftd::interpreter::FTD_DISPLAY_BLOCK => Ok(ftd::executor::Display::Block),
+            ftd::interpreter::FTD_DISPLAY_INLINE => Ok(ftd::executor::Display::Inline),
+            ftd::interpreter::FTD_DISPLAY_INLINE_BLOCK => Ok(ftd::executor::Display::InlineBlock),
+            t => ftd::executor::utils::parse_error(
+                format!("Unknown variant `{}` for or-type `ftd.display`", t),
+                doc.name,
+                line_number,
+            ),
+        }
+    }
+
+    pub(crate) fn optional_display(
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+        key: &str,
+        inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+        component_name: &str,
+    ) -> ftd::executor::Result<ftd::executor::Value<Option<ftd::executor::Display>>> {
+        let or_type_value = ftd::executor::value::optional_or_type(
+            key,
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+            ftd::interpreter::FTD_DISPLAY,
+            inherited_variables,
+        )?;
+
+        Ok(ftd::executor::Value::new(
+            ftd::executor::Display::from_optional_values(or_type_value.value, doc, line_number)?,
+            or_type_value.line_number,
+            or_type_value.properties,
+        ))
+    }
+
+    pub fn to_css_str(&self) -> &str {
+        match self {
+            ftd::executor::Display::InlineBlock => "inline-block",
+            ftd::executor::Display::Inline => "inline",
+            ftd::executor::Display::Block => "block",
         }
     }
 }
@@ -3224,7 +3638,7 @@ impl TextStyle {
     }
 
     fn from_optional_values(
-        or_type_value: Option<Vec<(String, ftd::interpreter2::PropertyValue)>>,
+        or_type_value: Option<Vec<(String, ftd::interpreter::PropertyValue)>>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -3236,7 +3650,7 @@ impl TextStyle {
     }
 
     fn from_values(
-        or_type_values: Vec<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_values: Vec<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -3258,69 +3672,66 @@ impl TextStyle {
 
         for value in or_type_values {
             match value.0.as_str() {
-                ftd::interpreter2::FTD_TEXT_STYLE_ITALIC => {
+                ftd::interpreter::FTD_TEXT_STYLE_ITALIC => {
                     text_style.italic = true;
-                    add_in_map(ftd::interpreter2::FTD_TEXT_STYLE_ITALIC, &mut booleans);
+                    add_in_map(ftd::interpreter::FTD_TEXT_STYLE_ITALIC, &mut booleans);
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_STRIKE => {
+                ftd::interpreter::FTD_TEXT_STYLE_STRIKE => {
                     text_style.strike = true;
-                    add_in_map(ftd::interpreter2::FTD_TEXT_STYLE_STRIKE, &mut booleans);
+                    add_in_map(ftd::interpreter::FTD_TEXT_STYLE_STRIKE, &mut booleans);
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_UNDERLINE => {
+                ftd::interpreter::FTD_TEXT_STYLE_UNDERLINE => {
                     text_style.underline = true;
-                    add_in_map(ftd::interpreter2::FTD_TEXT_STYLE_UNDERLINE, &mut booleans);
+                    add_in_map(ftd::interpreter::FTD_TEXT_STYLE_UNDERLINE, &mut booleans);
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_BOLD => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_BOLD => {
                     text_style.weight = Some(TextWeight::BOLD);
-                    add_in_map(ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_BOLD, &mut weights);
+                    add_in_map(ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_BOLD, &mut weights);
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_EXTRA_BOLD => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_EXTRA_BOLD => {
                     text_style.weight = Some(TextWeight::EXTRABOLD);
                     add_in_map(
-                        ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_EXTRA_BOLD,
+                        ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_EXTRA_BOLD,
                         &mut weights,
                     );
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_SEMI_BOLD => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_SEMI_BOLD => {
                     text_style.weight = Some(TextWeight::SEMIBOLD);
                     add_in_map(
-                        ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_SEMI_BOLD,
+                        ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_SEMI_BOLD,
                         &mut weights,
                     );
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_HEAVY => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_HEAVY => {
                     text_style.weight = Some(TextWeight::HEAVY);
-                    add_in_map(ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_HEAVY, &mut weights);
+                    add_in_map(ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_HEAVY, &mut weights);
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_EXTRA_LIGHT => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_EXTRA_LIGHT => {
                     text_style.weight = Some(TextWeight::EXTRALIGHT);
                     add_in_map(
-                        ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_EXTRA_LIGHT,
+                        ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_EXTRA_LIGHT,
                         &mut weights,
                     );
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_LIGHT => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_LIGHT => {
                     text_style.weight = Some(TextWeight::LIGHT);
-                    add_in_map(ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_LIGHT, &mut weights);
+                    add_in_map(ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_LIGHT, &mut weights);
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_MEDIUM => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_MEDIUM => {
                     text_style.weight = Some(TextWeight::MEDIUM);
-                    add_in_map(
-                        ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_MEDIUM,
-                        &mut weights,
-                    );
+                    add_in_map(ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_MEDIUM, &mut weights);
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_REGULAR => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_REGULAR => {
                     text_style.weight = Some(TextWeight::REGULAR);
                     add_in_map(
-                        ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_REGULAR,
+                        ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_REGULAR,
                         &mut weights,
                     );
                 }
-                ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_HAIRLINE => {
+                ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_HAIRLINE => {
                     text_style.weight = Some(TextWeight::HAIRLINE);
                     add_in_map(
-                        ftd::interpreter2::FTD_TEXT_STYLE_WEIGHT_HAIRLINE,
+                        ftd::interpreter::FTD_TEXT_STYLE_WEIGHT_HAIRLINE,
                         &mut weights,
                     );
                 }
@@ -3369,8 +3780,8 @@ impl TextStyle {
     }
 
     pub(crate) fn optional_text_style(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -3384,7 +3795,7 @@ impl TextStyle {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_TEXT_STYLE,
+            ftd::interpreter::FTD_TEXT_STYLE,
             inherited_variables,
         )?;
 
@@ -3399,7 +3810,7 @@ impl TextStyle {
         if self.italic {
             return "italic".to_string();
         }
-        ftd::interpreter2::FTD_IGNORE_KEY.to_string()
+        ftd::interpreter::FTD_IGNORE_KEY.to_string()
     }
 
     pub fn font_decoration_string(&self) -> String {
@@ -3412,7 +3823,7 @@ impl TextStyle {
         }
 
         if css_string.is_empty() {
-            return ftd::interpreter2::FTD_IGNORE_KEY.to_string();
+            return ftd::interpreter::FTD_IGNORE_KEY.to_string();
         }
         css_string.join(" ")
     }
@@ -3421,7 +3832,7 @@ impl TextStyle {
         if let Some(weight) = self.weight.as_ref() {
             return weight.to_weight_string();
         }
-        ftd::interpreter2::FTD_IGNORE_KEY.to_string()
+        ftd::interpreter::FTD_IGNORE_KEY.to_string()
     }
 
     pub fn filter_for_style(values: String) -> String {
@@ -3440,7 +3851,7 @@ impl TextStyle {
 
         let filtered = result.trim_end();
         let res = match filtered.is_empty() {
-            true => return ftd::interpreter2::FTD_VALUE_UNCHANGED.to_string(),
+            true => return ftd::interpreter::FTD_VALUE_UNCHANGED.to_string(),
             false => filtered.to_string(),
         };
         format!("\"{}\"", res)
@@ -3463,7 +3874,7 @@ impl TextStyle {
 
         let filtered = result.trim_end();
         let res = match filtered.is_empty() {
-            true => return ftd::interpreter2::FTD_VALUE_UNCHANGED.to_string(),
+            true => return ftd::interpreter::FTD_VALUE_UNCHANGED.to_string(),
             false => filtered.to_string(),
         };
         format!("\"{}\"", res)
@@ -3486,7 +3897,7 @@ impl TextStyle {
 
         let filtered = result.trim_end();
         let res = match filtered.is_empty() {
-            true => return ftd::interpreter2::FTD_VALUE_UNCHANGED.to_string(),
+            true => return ftd::interpreter::FTD_VALUE_UNCHANGED.to_string(),
             false => filtered.to_string(),
         };
         format!("\"{}\"", res)
@@ -3505,7 +3916,7 @@ pub enum TextTransform {
 
 impl TextTransform {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -3517,17 +3928,17 @@ impl TextTransform {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_TEXT_TRANSFORM_NONE => Ok(TextTransform::NONE),
-            ftd::interpreter2::FTD_TEXT_TRANSFORM_CAPITALIZE => Ok(TextTransform::CAPITALIZE),
-            ftd::interpreter2::FTD_TEXT_TRANSFORM_UPPERCASE => Ok(TextTransform::UPPERCASE),
-            ftd::interpreter2::FTD_TEXT_TRANSFORM_LOWERCASE => Ok(TextTransform::LOWERCASE),
-            ftd::interpreter2::FTD_TEXT_TRANSFORM_INITIAL => Ok(TextTransform::INITIAL),
-            ftd::interpreter2::FTD_TEXT_TRANSFORM_INHERIT => Ok(TextTransform::INHERIT),
+            ftd::interpreter::FTD_TEXT_TRANSFORM_NONE => Ok(TextTransform::NONE),
+            ftd::interpreter::FTD_TEXT_TRANSFORM_CAPITALIZE => Ok(TextTransform::CAPITALIZE),
+            ftd::interpreter::FTD_TEXT_TRANSFORM_UPPERCASE => Ok(TextTransform::UPPERCASE),
+            ftd::interpreter::FTD_TEXT_TRANSFORM_LOWERCASE => Ok(TextTransform::LOWERCASE),
+            ftd::interpreter::FTD_TEXT_TRANSFORM_INITIAL => Ok(TextTransform::INITIAL),
+            ftd::interpreter::FTD_TEXT_TRANSFORM_INHERIT => Ok(TextTransform::INHERIT),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.text-transform`", t),
                 doc.name,
@@ -3537,8 +3948,8 @@ impl TextTransform {
     }
 
     pub(crate) fn optional_text_transform(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -3552,7 +3963,7 @@ impl TextTransform {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_TEXT_TRANSFORM,
+            ftd::interpreter::FTD_TEXT_TRANSFORM,
             inherited_variables,
         )?;
 
@@ -3589,7 +4000,7 @@ pub enum BorderStyle {
 
 impl BorderStyle {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -3600,19 +4011,19 @@ impl BorderStyle {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_BORDER_STYLE_DOTTED => Ok(BorderStyle::DOTTED),
-            ftd::interpreter2::FTD_BORDER_STYLE_DASHED => Ok(BorderStyle::DASHED),
-            ftd::interpreter2::FTD_BORDER_STYLE_SOLID => Ok(BorderStyle::SOLID),
-            ftd::interpreter2::FTD_BORDER_STYLE_GROOVE => Ok(BorderStyle::GROOVE),
-            ftd::interpreter2::FTD_BORDER_STYLE_RIDGE => Ok(BorderStyle::RIDGE),
-            ftd::interpreter2::FTD_BORDER_STYLE_OUTSET => Ok(BorderStyle::OUTSET),
-            ftd::interpreter2::FTD_BORDER_STYLE_INSET => Ok(BorderStyle::INSET),
-            ftd::interpreter2::FTD_BORDER_STYLE_DOUBLE => Ok(BorderStyle::DOUBLE),
+            ftd::interpreter::FTD_BORDER_STYLE_DOTTED => Ok(BorderStyle::DOTTED),
+            ftd::interpreter::FTD_BORDER_STYLE_DASHED => Ok(BorderStyle::DASHED),
+            ftd::interpreter::FTD_BORDER_STYLE_SOLID => Ok(BorderStyle::SOLID),
+            ftd::interpreter::FTD_BORDER_STYLE_GROOVE => Ok(BorderStyle::GROOVE),
+            ftd::interpreter::FTD_BORDER_STYLE_RIDGE => Ok(BorderStyle::RIDGE),
+            ftd::interpreter::FTD_BORDER_STYLE_OUTSET => Ok(BorderStyle::OUTSET),
+            ftd::interpreter::FTD_BORDER_STYLE_INSET => Ok(BorderStyle::INSET),
+            ftd::interpreter::FTD_BORDER_STYLE_DOUBLE => Ok(BorderStyle::DOUBLE),
             t => ftd::executor::utils::parse_error(
                 format!("Unknown variant `{}` for or-type `ftd.border-style`", t),
                 doc.name,
@@ -3622,8 +4033,8 @@ impl BorderStyle {
     }
 
     pub(crate) fn optional_border_style(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -3637,7 +4048,7 @@ impl BorderStyle {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_BORDER_STYLE,
+            ftd::interpreter::FTD_BORDER_STYLE,
             inherited_variables,
         )?;
 
@@ -3662,6 +4073,84 @@ impl BorderStyle {
     }
 }
 
+#[derive(serde::Deserialize, Debug, PartialEq, Clone, serde::Serialize)]
+pub enum ImageFit {
+    NONE,
+    FILL,
+    COVER,
+    CONTAIN,
+    SCALEDOWN,
+}
+
+impl ImageFit {
+    fn from_optional_values(
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Option<Self>> {
+        if let Some(value) = or_type_value {
+            return Ok(Some(ImageFit::from_values(value, doc, line_number)?));
+        }
+        Ok(None)
+    }
+
+    fn from_values(
+        or_type_value: (String, ftd::interpreter::PropertyValue),
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+    ) -> ftd::executor::Result<Self> {
+        match or_type_value.0.as_str() {
+            ftd::interpreter::FTD_IMAGE_FIT_NONE => Ok(ImageFit::NONE),
+            ftd::interpreter::FTD_IMAGE_FIT_COVER => Ok(ImageFit::COVER),
+            ftd::interpreter::FTD_IMAGE_FIT_CONTAIN => Ok(ImageFit::CONTAIN),
+            ftd::interpreter::FTD_IMAGE_FIT_FILL => Ok(ImageFit::FILL),
+            ftd::interpreter::FTD_IMAGE_FIT_SCALE_DOWN => Ok(ImageFit::SCALEDOWN),
+            t => ftd::executor::utils::parse_error(
+                format!("Unknown variant `{}` for or-type `ftd.image-fit`", t),
+                doc.name,
+                line_number,
+            ),
+        }
+    }
+
+    pub(crate) fn optional_image_fit(
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
+        doc: &ftd::executor::TDoc,
+        line_number: usize,
+        key: &str,
+        inherited_variables: &ftd::VecMap<(String, Vec<usize>)>,
+        component_name: &str,
+    ) -> ftd::executor::Result<ftd::executor::Value<Option<ImageFit>>> {
+        let or_type_value = ftd::executor::value::optional_or_type(
+            key,
+            component_name,
+            properties,
+            arguments,
+            doc,
+            line_number,
+            ftd::interpreter::FTD_IMAGE_FIT,
+            inherited_variables,
+        )?;
+
+        Ok(ftd::executor::Value::new(
+            ImageFit::from_optional_values(or_type_value.value, doc, line_number)?,
+            or_type_value.line_number,
+            or_type_value.properties,
+        ))
+    }
+
+    pub fn to_css_string(&self) -> String {
+        match self {
+            ImageFit::NONE => "none".to_string(),
+            ImageFit::COVER => "cover".to_string(),
+            ImageFit::CONTAIN => "contain".to_string(),
+            ImageFit::FILL => "fill".to_string(),
+            ImageFit::SCALEDOWN => "scale-down".to_string(),
+        }
+    }
+}
+
 /// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#lazy-loading-attributes
 #[derive(serde::Deserialize, Debug, Default, PartialEq, Clone, serde::Serialize)]
 #[serde(tag = "type")]
@@ -3673,7 +4162,7 @@ pub enum Loading {
 
 impl Loading {
     fn from_optional_values(
-        or_type_value: Option<(String, ftd::interpreter2::PropertyValue)>,
+        or_type_value: Option<(String, ftd::interpreter::PropertyValue)>,
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Option<Self>> {
@@ -3685,13 +4174,13 @@ impl Loading {
     }
 
     fn from_values(
-        or_type_value: (String, ftd::interpreter2::PropertyValue),
+        or_type_value: (String, ftd::interpreter::PropertyValue),
         doc: &ftd::executor::TDoc,
         line_number: usize,
     ) -> ftd::executor::Result<Self> {
         match or_type_value.0.as_str() {
-            ftd::interpreter2::FTD_LOADING_LAZY => Ok(Loading::Lazy),
-            ftd::interpreter2::FTD_LOADING_EAGER => Ok(Loading::Eager),
+            ftd::interpreter::FTD_LOADING_LAZY => Ok(Loading::Lazy),
+            ftd::interpreter::FTD_LOADING_EAGER => Ok(Loading::Eager),
             t => ftd::executor::utils::parse_error(
                 format!(
                     "Unknown variant `{}` for or-type `ftd.loading`. Help: use `lazy` or `eager`",
@@ -3704,8 +4193,8 @@ impl Loading {
     }
 
     pub(crate) fn loading_with_default(
-        properties: &[ftd::interpreter2::Property],
-        arguments: &[ftd::interpreter2::Argument],
+        properties: &[ftd::interpreter::Property],
+        arguments: &[ftd::interpreter::Argument],
         doc: &ftd::executor::TDoc,
         line_number: usize,
         key: &str,
@@ -3719,7 +4208,7 @@ impl Loading {
             arguments,
             doc,
             line_number,
-            ftd::interpreter2::FTD_LOADING,
+            ftd::interpreter::FTD_LOADING,
             inherited_variables,
         )?;
 

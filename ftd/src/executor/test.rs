@@ -3,16 +3,16 @@ use pretty_assertions::assert_eq; // macro
 pub fn interpret_helper(
     name: &str,
     source: &str,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Document> {
-    let mut s = ftd::interpreter2::interpret(name, source)?;
+) -> ftd::interpreter::Result<ftd::interpreter::Document> {
+    let mut s = ftd::interpreter::interpret(name, source)?;
     let document;
     loop {
         match s {
-            ftd::interpreter2::Interpreter::Done { document: doc } => {
+            ftd::interpreter::Interpreter::Done { document: doc } => {
                 document = doc;
                 break;
             }
-            ftd::interpreter2::Interpreter::StuckOnImport {
+            ftd::interpreter::Interpreter::StuckOnImport {
                 module, state: st, ..
             } => {
                 let source = "";
@@ -23,7 +23,7 @@ pub fn interpret_helper(
                     foreign_function.push("fn".to_string());
                 }
 
-                let document = ftd::interpreter2::ParsedDocument::parse(module.as_str(), source)?;
+                let document = ftd::interpreter::ParsedDocument::parse(module.as_str(), source)?;
 
                 s = st.continue_after_import(
                     module.as_str(),
@@ -33,12 +33,12 @@ pub fn interpret_helper(
                     0,
                 )?;
             }
-            ftd::interpreter2::Interpreter::StuckOnProcessor {
+            ftd::interpreter::Interpreter::StuckOnProcessor {
                 state, ast, module, ..
             } => {
                 let variable_definition = ast.clone().get_variable_definition(module.as_str())?;
                 let processor = variable_definition.processor.unwrap();
-                let value = ftd::interpreter2::Value::String {
+                let value = ftd::interpreter::Value::String {
                     text: variable_definition
                         .value
                         .caption()
@@ -48,19 +48,19 @@ pub fn interpret_helper(
                 };
                 s = state.continue_after_processor(value, ast)?;
             }
-            ftd::interpreter2::Interpreter::StuckOnForeignVariable {
+            ftd::interpreter::Interpreter::StuckOnForeignVariable {
                 state,
                 module,
                 variable,
                 ..
             } => {
                 if module.eq("test") {
-                    let value = ftd::interpreter2::Value::String {
+                    let value = ftd::interpreter::Value::String {
                         text: variable.to_uppercase().to_string(),
                     };
                     s = state.continue_after_variable(module.as_str(), variable.as_str(), value)?;
                 } else {
-                    return ftd::interpreter2::utils::e2(
+                    return ftd::interpreter::utils::e2(
                         format!("Unknown module {}", module),
                         module.as_str(),
                         0,
@@ -77,7 +77,7 @@ fn p(s: &str, t: &str, fix: bool, file_location: &std::path::PathBuf) {
     let doc = interpret_helper("foo", s).unwrap_or_else(|e| panic!("{:?}", e));
     let mut executor =
         ftd::executor::ExecuteDoc::from_interpreter(doc).unwrap_or_else(|e| panic!("{:?}", e));
-    for thing in ftd::interpreter2::default::default_bag().keys() {
+    for thing in ftd::interpreter::default::get_default_bag().keys() {
         executor.bag.remove(thing);
     }
     let expected_json = serde_json::to_string_pretty(&executor).unwrap();
@@ -98,7 +98,11 @@ fn executor_test_all() {
     let fix = cli_args.iter().any(|v| v.eq("fix=true"));
     let path = cli_args.iter().find_map(|v| v.strip_prefix("path="));
     for (files, json) in find_file_groups() {
-        let t = std::fs::read_to_string(&json).unwrap();
+        let t = if fix {
+            "".to_string()
+        } else {
+            std::fs::read_to_string(&json).unwrap()
+        };
         for f in files {
             match path {
                 Some(path) if !f.to_str().unwrap().contains(path) => continue,
@@ -111,31 +115,9 @@ fn executor_test_all() {
     }
 }
 
-fn find_all_files_matching_extension_recursively(
-    dir: impl AsRef<std::path::Path>,
-    extension: &str,
-) -> Vec<std::path::PathBuf> {
-    let mut files = vec![];
-    for entry in std::fs::read_dir(dir).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_dir() {
-            files.extend(find_all_files_matching_extension_recursively(
-                &path, extension,
-            ));
-        } else {
-            match path.extension() {
-                Some(ext) if ext == extension => files.push(path),
-                _ => continue,
-            }
-        }
-    }
-    files
-}
-
 fn find_file_groups() -> Vec<(Vec<std::path::PathBuf>, std::path::PathBuf)> {
     let files = {
-        let mut f = find_all_files_matching_extension_recursively("t/executor", "ftd");
+        let mut f = ftd::utils::find_all_files_matching_extension_recursively("t/executor", "ftd");
         f.sort();
         f
     };

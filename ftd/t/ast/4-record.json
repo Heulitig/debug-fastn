@@ -1,6 +1,6 @@
 [
   {
-    "Record": {
+    "record": {
       "name": "foo",
       "fields": [
         {
@@ -11,7 +11,8 @@
           },
           "mutable": false,
           "value": null,
-          "line_number": 2
+          "line_number": 2,
+          "access_modifier": "Public"
         },
         {
           "name": "details",
@@ -21,13 +22,14 @@
           },
           "mutable": false,
           "value": {
-            "String": {
+            "string-value": {
               "value": "This contains details for record `foo`.\nThis is default text for the field details.\nIt can be overridden by the variable of this type.",
-              "line_number": 8,
+              "line-number": 6,
               "source": "Default"
             }
           },
-          "line_number": 8
+          "line_number": 6,
+          "access_modifier": "Public"
         }
       ],
       "line_number": 1

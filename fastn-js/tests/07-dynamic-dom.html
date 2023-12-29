@@ -1,0 +1,71 @@
+<html>
+<head>
+    <script src="../js/dom.js"></script>
+    <script src="../js/fastn.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/virtual.js"></script>
+    <script src="../js/ftd.js"></script>
+    <script src="../js/postInit.js"></script>
+</head>
+<body></body>
+<script>
+    (function() {
+        function main (root) {
+            let p = fastn.mutable(null);
+            let i = fastn_dom.createKernel(root, fastn_dom.ElementKind.Text);
+            i.setStaticProperty(fastn_dom.PropertyKind.StringValue, "Click me");
+            i.addEventHandler(fastn_dom.Event.Click, function () {
+                if (p.get() === null) {
+                    p.set(fastn.recordInstance({"name": "Ritesh"}));
+                } else {
+                    p.set(null);
+                }
+            })
+
+            fastn_dom.conditionalDom(root, [p], function () {
+                    return p.get() !== null
+                }, function (root) {
+                    return showPerson(root, p.get());
+                }
+            );
+
+            let i1 = fastn_dom.createKernel(root, fastn_dom.ElementKind.Text);
+            i1.setStaticProperty(fastn_dom.PropertyKind.StringValue, "After condition");
+        }
+
+        function showPerson(root, p) {
+            let i = fastn_dom.createKernel(root, fastn_dom.ElementKind.Text);
+            i.setProperty(fastn_dom.PropertyKind.StringValue, p.get("name"));
+            return i;
+        }
+
+        document.body.innerHTML = fastnVirtual.ssr(main);
+        fastnVirtual.doubleBuffer(main);
+    })();
+</script>
+</html>
+
+
+<!--
+-- record person:
+caption name:
+
+-- optional person $p:
+
+-- ftd.text: Click me
+$on-click$: { p = { name: Ritesh } }
+
+-- show-person: $p
+if: { p != NULL }
+
+-- ftd.text: After condition
+
+
+
+-- component show-person:
+caption person p:
+
+-- ftd.text: $show-person.p.name
+
+-- end: show-person
+-->

@@ -1,0 +1,27 @@
+[package]
+name = "fastn-js"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+#rquickjs = { workspace = true, optional = true }
+pretty.workspace = true
+itertools.workspace = true
+indoc.workspace = true
+fastn-grammar.workspace = true
+prettify-js.workspace = true
+camino.workspace = true
+
+[target.'cfg(not(windows))'.dependencies]
+quick-js.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+rquickjs.workspace = true
+
+[dev-dependencies]
+indoc.workspace = true
+pretty_assertions.workspace = true

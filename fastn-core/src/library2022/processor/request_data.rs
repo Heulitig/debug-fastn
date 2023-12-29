@@ -1,49 +1,43 @@
 pub fn process(
     value: ftd::ast::VariableValue,
-    kind: ftd::interpreter2::Kind,
-    doc: &ftd::interpreter2::TDoc,
-    config: &fastn_core::Config,
-) -> ftd::interpreter2::Result<ftd::interpreter2::Value> {
-    // TODO: URL params not yet handled
-    let req = match config.request.as_ref() {
-        Some(v) => v,
-        None => {
-            return ftd::interpreter2::utils::e2(
-                "config does not contain http-request object",
-                doc.name,
-                value.line_number(),
-            )
-        }
-    };
-    let mut data = req.query().clone();
+    kind: ftd::interpreter::Kind,
+    doc: &ftd::interpreter::TDoc,
+    req_config: &fastn_core::RequestConfig,
+) -> ftd::interpreter::Result<ftd::interpreter::Value> {
+    let mut data = req_config.request.query().clone();
 
-    let mut named_parameters = std::collections::HashMap::new();
-    for (name, param_value) in config.named_parameters.iter() {
-        let json_value = param_value
-            .to_serde_value()
-            .ok_or(ftd::p1::Error::ParseError {
-                message: format!("ftd value cannot be parsed to json: name: {}", name),
-                doc_id: doc.name.to_string(),
-                line_number: value.line_number(),
-            })?;
-        named_parameters.insert(name.to_string(), json_value);
+    for (name, param_value) in req_config.named_parameters.iter() {
+        let json_value =
+            param_value
+                .to_serde_value()
+                .ok_or(ftd::ftd2021::p1::Error::ParseError {
+                    message: format!("ftd value cannot be parsed to json: name: {name}"),
+                    doc_id: doc.name.to_string(),
+                    line_number: value.line_number(),
+                })?;
+        data.insert(name.to_string(), json_value);
     }
 
-    data.extend(named_parameters);
-
-    match req.body_as_json() {
+    match req_config.request.body_as_json() {
         Ok(Some(b)) => {
             data.extend(b);
         }
         Ok(None) => {}
         Err(e) => {
-            return ftd::interpreter2::utils::e2(
-                format!("Error while parsing request body: {:?}", e),
+            return ftd::interpreter::utils::e2(
+                format!("Error while parsing request body: {e:?}"),
                 doc.name,
                 value.line_number(),
             )
         }
     }
 
-    doc.from_json(&data, &kind, value.line_number())
+    data.extend(
+        req_config
+            .extra_data
+            .iter()
+            .map(|(k, v)| (k.to_string(), serde_json::Value::String(v.to_string()))),
+    );
+
+    doc.from_json(&data, &kind, &value)
 }

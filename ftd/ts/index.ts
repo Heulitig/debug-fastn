@@ -69,11 +69,13 @@ window.ftd = (function() {
     }
 
     exports.handle_event = function (evt: Event, id: string, event: string, obj: Element) {
+        window.ftd.utils.reset_full_height();
         console_log(id, event);
         let actions = JSON.parse(event);
         for (const action in actions) {
             handle_event(evt, id, actions[action], obj);
         }
+        window.ftd.utils.set_full_height();
     };
 
     exports.handle_function = function (evt: Event, id: string, event: string, obj: Element) {
@@ -370,6 +372,9 @@ window.ftd = (function() {
 
     // source: https://stackoverflow.com/questions/400212/ (cc-by-sa)
     exports.copy_to_clipboard = function (text: string) {
+        if (text.startsWith("\\", 0)) {
+            text = text.substring(1);
+        }
         if (!navigator.clipboard) {
             fallbackCopyTextToClipboard(text);
             return;
@@ -379,6 +384,67 @@ window.ftd = (function() {
         }, function(err) {
             console.error('Async: Could not copy text: ', err);
         });
+    }
+
+    exports.set_rive_boolean = function (canva_id: string, input: string, value: boolean, args: any, data: any, id: string) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const bumpTrigger = inputs.find(i => i.name === input);
+        bumpTrigger.value = value;
+    }
+
+    exports.toggle_rive_boolean = function (canva_id: string, input: string, args: any, data: any, id: string) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const trigger = inputs.find(i => i.name === input);
+        trigger.value = !trigger.value;
+    }
+
+    exports.set_rive_integer = function (canva_id: string, input: string, value: bigint, args: any, data: any, id: string) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const bumpTrigger = inputs.find(i => i.name === input);
+        bumpTrigger.value = value;
+    }
+
+    exports.fire_rive = function (canva_id: string, input: string, args: any, data: any, id: string) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        const stateMachineName = window[rive_const].stateMachineNames[0];
+        const inputs = window[rive_const].stateMachineInputs(stateMachineName);
+        // @ts-ignore
+        const bumpTrigger = inputs.find(i => i.name === input);
+        bumpTrigger.fire();
+    }
+
+    exports.play_rive = function (canva_id: string, input: string, args: any, data: any, id: string) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        window[rive_const].play(input);
+    }
+
+    exports.pause_rive = function (canva_id: string, input: string, args: any, data: any, id: string) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        window[rive_const].pause(input);
+    }
+
+    exports.toggle_play_rive = function (canva_id: string, input: string, args: any, data: any, id: string) {
+        let canva_with_id = canva_id + ":" + id;
+        let rive_const = window.ftd.utils.function_name_to_js_function(canva_with_id);
+        let r = window[rive_const];
+        r.playingAnimationNames.includes(input)
+            ? r.pause(input)
+            : r.play(input);
     }
 
     exports.component_data = function (component: HTMLElement) {

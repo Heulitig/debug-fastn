@@ -1,0 +1,99 @@
+<html>
+<head>
+    <script src="../js/dom.js"></script>
+    <script src="../js/fastn.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/virtual.js"></script>
+    <script src="../js/ftd.js"></script>
+    <script src="../js/postInit.js"></script>
+</head>
+<body></body>
+<script>
+    (function() {
+        function main (root) {
+            let first = fastn.recordInstance({ name: "Jill", bio: null });
+            let people = fastn.mutableList([first]);
+
+            let text = fastn_dom.createKernel(root, fastn_dom.ElementKind.Text);
+            text.setProperty(fastn_dom.PropertyKind.StringValue, "Click to add Tom");
+            text.addEventHandler(fastn_dom.Event.Click, function () {
+                people.push(fastn.recordInstance({ name: "Tom", bio: "I am Tom" }));
+            });
+
+            let text2 = fastn_dom.createKernel(root, fastn_dom.ElementKind.Text);
+            text2.setStaticProperty(fastn_dom.PropertyKind.StringValue, "Click to change first");
+            text2.addEventHandler(fastn_dom.Event.Click, function () {
+                first.set("name", "Jack");
+                first.set("bio", "I am Jack");
+            });
+
+            people.forLoop(root, function (root, item, index) {
+                let index_formula = fastn.formula([index], function () { return index.get() * 100; });
+                return showPerson(root, item, index_formula);
+            });
+        }
+
+        function showPerson(root, p, index) {
+            let c = fastn_dom.createKernel(root, fastn_dom.ElementKind.Column);
+
+            let i = fastn_dom.createKernel(c, fastn_dom.ElementKind.Text);
+            i.setProperty(fastn_dom.PropertyKind.StringValue, p.get("name"));
+
+            fastn_dom.conditionalDom(c, [p.get("bio")], function () { return p.get("bio").get() !== null; },
+                function (root) {
+                    let i2 = fastn_dom.createKernel(root, fastn_dom.ElementKind.Text);
+                    i2.setProperty(fastn_dom.PropertyKind.StringValue, p.get("bio"));
+                    return i2;
+                });
+
+
+            let i3 = fastn_dom.createKernel(c, fastn_dom.ElementKind.Integer);
+            i3.setProperty(fastn_dom.PropertyKind.IntegerValue, index);
+
+            return c;
+        }
+
+        main(document.body);
+    })();
+</script>
+</html>
+
+
+<!--
+
+-- record person:
+caption name:
+optional body bio:
+
+-- person $first: Jill
+
+-- person list $people:
+-- person: $first
+-- end: $people
+
+-- ftd.text: Click to add Tom
+$on-click$: $ftd.append($a = $people, v = { name: "Tom", bio: "I am Tom" })
+
+-- ftd.text: Click to change first
+$on-click$: { first.name = "Jack"; first.bio = "I am Jack" }
+
+-- show-person: $p
+for: $p, $idx in $people
+index: { $idx * 100 }
+
+-- component show-person:
+caption person p:
+integer index:
+
+-- ftd.column:
+
+-- ftd.text: $show-person.p.name
+-- ftd.text: $show-person.p.bio
+if: { show-person.p.bio != NULL }
+
+-- ftd.integer: $show-person.index
+
+-- end: ftd.column
+
+-- end: show-person
+-->
