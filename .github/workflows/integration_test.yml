@@ -66,7 +66,7 @@ jobs:
 
       - name: Populate sample data
         run: |
-          python scripts/populate_table.py
+          python scripts/populate-table.py
 
       - name: Test Hello World
         run: |
