@@ -83,6 +83,10 @@ jobs:
           # Waiting for the server to start
           sleep 10  # It might be more
 
+      - name: Check Flask server status
+        run: |
+          ps aux | grep "python scripts/test-server.py"
+
       - name: Curl server endpoint
         run: |
           curl http://127.0.0.1:5000/get-data
