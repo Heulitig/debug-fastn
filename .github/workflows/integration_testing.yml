@@ -42,13 +42,13 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-#      - name: Fastn install
-#        id: fastn-install
-#        continue-on-error: true
-#        uses: actions-rs/cargo@v1
-#        with:
-#          command: install
-#          args: --path fastn --profile dev
+      - name: Fastn install
+        id: fastn-install
+        continue-on-error: true
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path fastn --profile dev
 
       - name: Set up Python
         uses: actions/setup-python@v2
