@@ -78,7 +78,10 @@ jobs:
 
       - name: Test python server (port 5000)
         run: |
-          nohup python scripts/test-server.py
+          python scripts/test-server.py &
+          
+          # Waiting for the server to start
+          sleep 10  # It might be more
 
       - name: Current Directory (before testing)
         run: |
