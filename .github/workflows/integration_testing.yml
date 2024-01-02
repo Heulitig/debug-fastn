@@ -74,7 +74,7 @@ jobs:
           python scripts/test-server.py &
           
           # Waiting for the server to start
-          sleep 10  # It might be more
+          sleep 10  # We might want to wait more
 
       - name: Check Flask server status (debug)
         run: |
