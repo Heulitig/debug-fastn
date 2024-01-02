@@ -83,6 +83,10 @@ jobs:
           # Waiting for the server to start
           sleep 5  # It might be more
 
+      - name: Curl server endpoint
+        run: |
+          curl http://127:0.0.1:5000
+
       - name: Current Directory (before testing)
         run: |
           echo "Current Working Directory"
