@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   integration-test:
@@ -20,16 +23,6 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
-#      flask:
-#        image: python:3.8
-#        ports:
-#          - 5000:5000
-#        env:
-#          FLASK_APP: test-server.py
-#          FLASK_RUN_HOST: 0.0.0.0
-#          FLASK_RUN_PORT: 5000
-#        command: sh -c "pip install Flask psycopg2 && flask run"
 
     steps:
       - name: Checkout Repository
@@ -97,6 +90,10 @@ jobs:
           pwd 
           echo "Current Directory files"
           ls -al 
+
+      - name: Export Postgres connection FASTN_DB_URL
+        run: |
+          export FASTN_DB_URL=postgres://testuser:testpassword@localhost:5432/testdb
 
       - name: Run integration tests (hello world)
         run: |
