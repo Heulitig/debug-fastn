@@ -81,7 +81,7 @@ jobs:
           python scripts/test-server.py &
           
           # Waiting for the server to start
-          sleep 5  # It might be more
+          sleep 10  # It might be more
 
       - name: Curl server endpoint
         run: |
