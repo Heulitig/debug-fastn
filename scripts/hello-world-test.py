@@ -9,7 +9,6 @@ db_params = {
     "database": "testdb",
 }
 
-
 def fetch_data():
     # Connect to the PostgreSQL database
     connection = psycopg2.connect(**db_params)

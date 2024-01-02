@@ -65,7 +65,7 @@ jobs:
         run: |
           python scripts/populate-table.py
 
-      - name: Test Hello World
+      - name: Test Hello World (debug)
         run: |
           python scripts/hello-world-test.py
 
@@ -76,15 +76,15 @@ jobs:
           # Waiting for the server to start
           sleep 10  # It might be more
 
-      - name: Check Flask server status
+      - name: Check Flask server status (debug)
         run: |
           ps aux | grep "python scripts/test-server.py"
 
-      - name: Curl server endpoint
+      - name: Curl server endpoint (debug)
         run: |
           curl http://127.0.0.1:5000/get-data
 
-      - name: Current Directory (before testing)
+      - name: Current Directory (debug)
         run: |
           echo "Current Working Directory"
           pwd 
